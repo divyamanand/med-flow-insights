@@ -12,8 +12,16 @@ import Supplies from "./pages/Supplies";
 import BloodBank from "./pages/BloodBank";
 import Robots from "./pages/Robots";
 import NotFound from "./pages/NotFound";
+import "./lib/firebase"; // Import Firebase to initialize it
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
