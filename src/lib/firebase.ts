@@ -5,12 +5,12 @@ import { getFirestore } from "firebase/firestore";
 // Your Firebase configuration
 // Replace these with your actual Firebase project configuration
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAZpvxAmO1PYFiqOvq8Ws0O03SXlHw2Dao",
+  authDomain: "hospital-f5f91.firebaseapp.com",
+  projectId: "hospital-f5f91",
+  storageBucket: "hospital-f5f91.firebasestorage.app",
+  messagingSenderId: "26921104250",
+  appId: "1:26921104250:web:4285d6c4e33d61d1211cc3"
 };
 
 // Initialize Firebase
