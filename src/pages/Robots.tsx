@@ -5,8 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Radio, LineChart, AreaChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { Ambulance, BriefcaseMedical, Medication, Monitor } from "lucide-react";
+import { LineChart, AreaChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { Ambulance, BriefcaseMedical, PillIcon, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Sample robot tracking data 
@@ -139,7 +139,7 @@ export default function Robots() {
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Maintenance</span>
-                <Medication className="h-5 w-5 text-red-500" />
+                <PillIcon className="h-5 w-5 text-red-500" />
               </div>
               <span className="text-3xl font-bold">{maintenanceRobots}</span>
             </div>

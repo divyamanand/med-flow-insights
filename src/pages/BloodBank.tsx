@@ -183,12 +183,12 @@ export default function BloodBank() {
                       </div>
                       <Progress
                         value={(data.available / (data.critical * 2)) * 100}
-                        className="h-2"
-                        indicatorClassName={
+                        className={cn(
+                          "h-2",
                           data.available <= data.critical
-                            ? "bg-red-500"
-                            : "bg-green-500"
-                        }
+                            ? "bg-muted text-red-500"
+                            : "bg-muted text-green-500"
+                        )}
                       />
                     </div>
                   </div>
