@@ -12,6 +12,7 @@ import Supplies from "./pages/Supplies";
 import BloodBank from "./pages/BloodBank";
 import Robots from "./pages/Robots";
 import NotFound from "./pages/NotFound";
+import MedicinesPage from "./pages/MedicinesPage";
 import "./lib/firebase"; // Import Firebase to initialize it
 
 const queryClient = new QueryClient({
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="supplies" element={<Supplies />} />
             <Route path="blood-bank" element={<BloodBank />} />
             <Route path="robots" element={<Robots />} />
+            <Route path="medicines" element={<MedicinesPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
