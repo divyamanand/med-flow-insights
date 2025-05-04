@@ -98,9 +98,18 @@ export default function Doctors() {
     return matchesSearch && matchesFilter;
   });
 
+  if (loading) {
+    return <div className="flex h-screen w-full items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+          <p className="text-lg font-medium">Connecting to Firebase...</p>
+        </div>
+      </div>
+  }
+
+
   return (
     <div className="space-y-6">
-      {/* <button className='bg-slate-600 text-red-600' onClick={() => {console.log(getDocument("doctor","4JxFECjayZj5RWMfoAxH"))}}>Click to getDoc</button> */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Doctors</h1>
