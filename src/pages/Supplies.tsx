@@ -1,5 +1,7 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Timestamp } from "firebase/firestore";
+import { getCollection } from "@/lib/firestore";
+import { BloodItem,SupplyItem } from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -32,130 +34,73 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Sample data
-const supplies = [
-  {
-    item_id: 1001,
-    name: "Disposable Gloves",
-    type: "PPE",
-    delivery_date: new Date(2023, 2, 15),
-    expiry_date: new Date(2025, 2, 15),
-    expired: false,
-  },
-  {
-    item_id: 1002,
-    name: "Surgical Masks",
-    type: "PPE",
-    delivery_date: new Date(2023, 1, 20),
-    expiry_date: new Date(2025, 1, 20),
-    expired: false,
-  },
-  {
-    item_id: 1003,
-    name: "Antibiotics - Amoxicillin",
-    type: "Medication",
-    delivery_date: new Date(2023, 0, 10),
-    expiry_date: new Date(2023, 6, 10),
-    expired: true,
-  },
-  {
-    item_id: 1004,
-    name: "IV Solution - Normal Saline",
-    type: "Medical Supply",
-    delivery_date: new Date(2023, 3, 5),
-    expiry_date: new Date(2025, 3, 5),
-    expired: false,
-  },
-  {
-    item_id: 1005,
-    name: "Syringes 10ml",
-    type: "Medical Supply",
-    delivery_date: new Date(2023, 2, 25),
-    expiry_date: new Date(2026, 2, 25),
-    expired: false,
-  },
-  {
-    item_id: 1006,
-    name: "Bandages",
-    type: "Medical Supply",
-    delivery_date: new Date(2023, 4, 1),
-    expiry_date: new Date(2026, 4, 1),
-    expired: false,
-  },
-  {
-    item_id: 1007,
-    name: "Antiseptic Solution",
-    type: "Medical Supply",
-    delivery_date: new Date(2023, 1, 15),
-    expiry_date: new Date(2024, 1, 15),
-    expired: false,
-  },
-  {
-    item_id: 1008,
-    name: "Painkillers - Ibuprofen",
-    type: "Medication",
-    delivery_date: new Date(2023, 0, 20),
-    expiry_date: new Date(2023, 7, 20),
-    expired: true,
-  },
-];
+// Define types at the top level
 
-const bloodInventory = [
-  {
-    item_id: 5001,
-    blood_group: "A+",
-    type: "Whole Blood",
-    delivery_date: new Date(2023, 3, 20),
-    expiry_date: new Date(2023, 4, 18),
-    expired: false,
-  },
-  {
-    item_id: 5002,
-    blood_group: "B+",
-    type: "Platelets",
-    delivery_date: new Date(2023, 3, 22),
-    expiry_date: new Date(2023, 3, 29),
-    expired: true,
-  },
-  {
-    item_id: 5003,
-    blood_group: "O-",
-    type: "Whole Blood",
-    delivery_date: new Date(2023, 3, 25),
-    expiry_date: new Date(2023, 4, 23),
-    expired: false,
-  },
-  {
-    item_id: 5004,
-    blood_group: "AB+",
-    type: "Plasma",
-    delivery_date: new Date(2023, 3, 26),
-    expiry_date: new Date(2023, 6, 26),
-    expired: false,
-  },
-  {
-    item_id: 5005,
-    blood_group: "A-",
-    type: "Red Blood Cells",
-    delivery_date: new Date(2023, 3, 27),
-    expiry_date: new Date(2023, 5, 27),
-    expired: false,
-  },
-  {
-    item_id: 5006,
-    blood_group: "O+",
-    type: "Whole Blood",
-    delivery_date: new Date(2023, 3, 15),
-    expiry_date: new Date(2023, 4, 13),
-    expired: false,
-  },
-];
+
+const getDate = (date: Timestamp | Date): Date => {
+  return date instanceof Timestamp ? date.toDate() : date;
+};
 
 export default function Supplies() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterExpired, setFilterExpired] = useState<boolean | null>(null);
   const [filterType, setFilterType] = useState<string | null>(null);
-  
+
+  const [supplies, setSupplies] = useState<SupplyItem[]>([]);
+  const [bloodInventory, setBloodInventory] = useState<BloodItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch supplies
+      const suppliesData = await getCollection("supply");
+      const formattedSupplies = suppliesData.map((item: any) => ({
+        id: item.id,
+        item_id: item.item_id,
+        name: item.name,
+        type: item.type,
+        delivery_date: getDate(item.delivery_date),
+        expiry_date: getDate(item.expiry_date),
+        expired: checkIfExpired(item.expiry_date),
+      })) as SupplyItem[];
+      setSupplies(formattedSupplies);
+      console.log("Fetched supplies:", formattedSupplies);
+
+      // Fetch blood inventory
+      const bloodData = await getCollection("blood_inventory");
+      const formattedBlood = bloodData.map((item: any) => ({
+        id: item.id,
+        item_id: item.item_id,
+        blood_group: item.blood_group,
+        type: item.type,
+        delivery_date: getDate(item.delivery_date),
+        expiry_date: getDate(item.expiry_date),
+        expired: checkIfExpired(item.expiry_date),
+      })) as BloodItem[];
+      setBloodInventory(formattedBlood);
+      console.log("Fetched blood inventory:", formattedBlood);
+
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError("Failed to load inventory data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, []);
+
+  const checkIfExpired = (date: Timestamp | Date | undefined): boolean => {
+    if (!date) return true;
+    const expiryDate = getDate(date);
+    return expiryDate < new Date();
+  };
+
   const filteredSupplies = supplies.filter((item) => {
     const matchesSearch =
       searchTerm === "" ||
@@ -187,8 +132,9 @@ export default function Supplies() {
   const expiringSupplies = supplies.filter(item => {
     if (item.expired) return false;
     
+    const expiryDate = getDate(item.expiry_date);
     const today = new Date();
-    const timeDiff = item.expiry_date.getTime() - today.getTime();
+    const timeDiff = expiryDate.getTime() - today.getTime();
     const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
     
     return daysDiff <= 30;
@@ -197,12 +143,26 @@ export default function Supplies() {
   const expiringBlood = bloodInventory.filter(item => {
     if (item.expired) return false;
     
+    const expiryDate = getDate(item.expiry_date);
     const today = new Date();
-    const timeDiff = item.expiry_date.getTime() - today.getTime();
+    const timeDiff = expiryDate.getTime() - today.getTime();
     const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
     
     return daysDiff <= 7;
   }).length;
+
+  if (loading) {
+    return <div className="flex h-screen w-full items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+          <p className="text-lg font-medium">Connecting to Firebase...</p>
+        </div>
+      </div>
+  }
+
+  if (error) {
+    return <div className="flex justify-center p-8 text-red-500">{error}</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -596,3 +556,4 @@ export default function Supplies() {
     </div>
   );
 }
+

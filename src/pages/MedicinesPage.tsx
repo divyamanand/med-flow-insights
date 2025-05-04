@@ -2,7 +2,7 @@ import React from 'react'
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { differenceInDays } from "date-fns"
-
+import { getDocument,addDocument } from '@/lib/firestore'
 
 // Define the Medicine Batch type
 interface MedicineBatch {
@@ -240,6 +240,14 @@ const medicinesData: Medicine[] = [
   },
 ]
 
+// const addAllMedicines = ()=>{
+//   medicinesData.forEach((it)=>{
+//     addDocument("medicine",it);
+//   })
+// }
+
+
+
 const MedicinesPage = () => {
 
     const [medicines] = useState<Medicine[]>(medicinesData)
@@ -287,7 +295,9 @@ const MedicinesPage = () => {
   return (
     <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-6">Medicine Inventory</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {/* <button className='bg-slate-600 text-red-600' onClick={() => addAllMedicines()}>Click to getDoc</button> */}
+        
+            <div className="m-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {medicines.map((medicine) => {
             const quantities = getQuantitiesByStatus(medicine)
             const manufacturer = medicine.batches[0]?.manufacturer || "Unknown"

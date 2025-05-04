@@ -15,11 +15,16 @@ import { db } from "./firebase";
 
 // Collection names
 const COLLECTIONS = {
-  PATIENTS: "patients",
-  DOCTORS: "doctors",
-  SUPPLIES: "supply_inventory",
+  PATIENTS: "patient",
+  DOCTORS: "doctor",
+  SUPPLIES: "supply",
   BLOOD: "blood_inventory",
-  ROBOTS: "robot_status"
+  ROBOTS: "robot",
+  MEDICINE: "medicine",
+  DONATION_STATES: "donation_states",
+  DONOR_AGE_DATA: "donarAgeData",
+  MONTHLY_DONATIONS: "monthlyDonations",
+  BLOOD_REQUESTS: "bloodRequests"
 };
 
 // Generic Firestore operations
@@ -30,6 +35,7 @@ export const getCollection = async (collectionName) => {
     id: doc.id,
     ...doc.data()
   }));
+  
 };
 
 export const getDocument = async (collectionName, docId) => {
@@ -43,6 +49,8 @@ export const getDocument = async (collectionName, docId) => {
   }
   return null;
 };
+
+
 
 export const addDocument = async (collectionName, data) => {
   const collectionRef = collection(db, collectionName);
@@ -58,6 +66,11 @@ export const deleteDocument = async (collectionName, docId) => {
   const docRef = doc(db, collectionName, docId);
   return await deleteDoc(docRef);
 };
+
+export const deleteDoctor = (docId:string) => {
+  deleteDocument(COLLECTIONS.DOCTORS,docId);
+}
+
 
 // Domain-specific operations
 export const getPatients = () => getCollection(COLLECTIONS.PATIENTS);
@@ -115,6 +128,9 @@ export const getAvailableDoctors = async () => {
     ...doc.data()
   }));
 };
+
+
+
 
 // Get expired supplies
 export const getExpiredSupplies = async () => {

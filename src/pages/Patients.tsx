@@ -1,5 +1,7 @@
-
-import { useState } from "react";
+import { getCollection } from '@/lib/firestore'
+import { useState, useEffect } from 'react';
+import { Patient } from '@/lib/types';
+import { getPatientDate } from '@/lib/utils';
 import {
   Card,
   CardContent,
@@ -32,112 +34,62 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-const patients = [
-  {
-    id: "P001",
-    name: "John Smith",
-    issues: ["Chest Pain", "High Blood Pressure"],
-    type: "Emergency",
-    date: new Date(2023, 3, 21),
-    ipd_no: "IPD2023042101",
-    doctor: "Dr. Sarah Johnson",
-    staff: ["Nurse Amy", "Tech Rob"],
-    medicines: ["Aspirin", "Lisinopril"],
-  },
-  {
-    id: "P002",
-    name: "Emily Davis",
-    issues: ["Annual Checkup"],
-    type: "Regular",
-    date: new Date(2023, 3, 20),
-    ipd_no: "IPD2023042001",
-    doctor: "Dr. Michael Brown",
-    staff: ["Nurse Tom"],
-    medicines: [],
-  },
-  {
-    id: "P003",
-    name: "Robert Wilson",
-    issues: ["Appendicitis"],
-    type: "Surgery",
-    date: new Date(2023, 3, 19),
-    ipd_no: "IPD2023041901",
-    doctor: "Dr. Jessica Martinez",
-    staff: ["Nurse Emma", "Nurse Dave", "Tech Samantha"],
-    medicines: ["Antibiotics", "Painkillers", "IV Fluids"],
-  },
-  {
-    id: "P004",
-    name: "Lisa Thompson",
-    issues: ["Respiratory Failure", "Pneumonia"],
-    type: "ICU",
-    date: new Date(2023, 3, 18),
-    ipd_no: "IPD2023041801",
-    doctor: "Dr. David Lee",
-    staff: ["Nurse Alex", "Nurse Maria", "Tech James"],
-    medicines: ["Ventolin", "Antibiotics", "Steroids", "Oxygen Therapy"],
-  },
-  {
-    id: "P005",
-    name: "Michael Johnson",
-    issues: ["Broken Arm", "Concussion"],
-    type: "Emergency",
-    date: new Date(2023, 3, 17),
-    ipd_no: "IPD2023041701",
-    doctor: "Dr. Patricia Wilson",
-    staff: ["Nurse Bob", "Tech Lucy"],
-    medicines: ["Painkillers", "Anti-inflammatory"],
-  },
-  {
-    id: "P006",
-    name: "Jennifer Brown",
-    issues: ["Pregnancy Checkup"],
-    type: "Regular",
-    date: new Date(2023, 3, 16),
-    ipd_no: "IPD2023041601",
-    doctor: "Dr. Elizabeth Chen",
-    staff: ["Nurse Kelly"],
-    medicines: ["Prenatal Vitamins"],
-  },
-  {
-    id: "P007",
-    name: "David Miller",
-    issues: ["Heart Surgery", "Coronary Artery Disease"],
-    type: "Surgery",
-    date: new Date(2023, 3, 15),
-    ipd_no: "IPD2023041501",
-    doctor: "Dr. Robert Taylor",
-    staff: ["Nurse Sarah", "Nurse John", "Tech Diana", "Tech George"],
-    medicines: ["Blood Thinners", "Beta Blockers", "Pain Medication", "Antibiotics"],
-  },
-  {
-    id: "P008",
-    name: "Susan Anderson",
-    issues: ["Stroke", "Hypertension"],
-    type: "ICU",
-    date: new Date(2023, 3, 14),
-    ipd_no: "IPD2023041401",
-    doctor: "Dr. James Wilson",
-    staff: ["Nurse Emily", "Nurse Michael", "Tech Robert"],
-    medicines: ["Blood Thinners", "Anti-hypertensives", "Statins"],
-  },
-];
-
 export default function Patients() {
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string | null>(null);
 
-  const filteredPatients = patients.filter((patient) => {
+  useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const data = await getCollection("patient"); // Changed from "doctor" to "patients"
+        if (data) {
+          setPatients(data as Patient[]);
+        } else {
+          setError("No patients data found");
+        }
+      } catch (err) {
+        setError("Failed to fetch patients");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPatients();
+  }, []);
+
+  const filteredPatients: Patient[] = (patients || []).filter((patient) => {
+    const name = patient?.name?.toLowerCase() || '';
+    const ipdNo = patient?.ipd_no?.toLowerCase() || '';
+    const doctor = patient?.doctor?.toLowerCase() || '';
+    const type = patient?.type || '';
+
     const matchesSearch =
       searchTerm === "" ||
-      patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.ipd_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.doctor.toLowerCase().includes(searchTerm.toLowerCase());
+      name.includes(searchTerm.toLowerCase()) ||
+      ipdNo.includes(searchTerm.toLowerCase()) ||
+      doctor.includes(searchTerm.toLowerCase());
 
-    const matchesFilter = filterType === null || patient.type === filterType;
+    const matchesFilter = filterType === null || type === filterType;
 
     return matchesSearch && matchesFilter;
   });
+
+  if (loading) {
+    return <div className="flex h-screen w-full items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+          <p className="text-lg font-medium">Connecting to Firebase...</p>
+        </div>
+      </div>
+  }
+
+  if (error) {
+    return <div className="flex justify-center p-8 text-red-500">{error}</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -255,60 +207,70 @@ export default function Patients() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPatients.map((patient) => (
-                  <TableRow key={patient.id}>
-                    <TableCell className="font-medium">{patient.name}</TableCell>
-                    <TableCell>{patient.ipd_no}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={
-                          patient.type === "Emergency"
-                            ? "border-red-200 bg-red-50 text-red-500"
-                            : patient.type === "ICU"
-                            ? "border-amber-200 bg-amber-50 text-amber-500"
-                            : patient.type === "Surgery"
-                            ? "border-blue-200 bg-blue-50 text-blue-500"
-                            : "border-green-200 bg-green-50 text-green-500"
-                        }
-                      >
-                        {patient.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{format(patient.date, "PP")}</TableCell>
-                    <TableCell>{patient.doctor}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {patient.issues.map((issue) => (
-                          <Badge key={issue} variant="secondary" className="text-xs">
-                            {issue}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 p-0"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem>Edit Patient</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                {filteredPatients.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center">
+                      No patients found
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  filteredPatients.map((patient) => (
+                    <TableRow key={patient.id}>
+                      <TableCell className="font-medium">{patient.name}</TableCell>
+                      <TableCell>{patient.ipd_no}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={
+                            patient.type === "Emergency"
+                              ? "border-red-200 bg-red-50 text-red-500"
+                              : patient.type === "ICU"
+                              ? "border-amber-200 bg-amber-50 text-amber-500"
+                              : patient.type === "Surgery"
+                              ? "border-blue-200 bg-blue-50 text-blue-500"
+                              : "border-green-200 bg-green-50 text-green-500"
+                          }
+                        >
+                          {patient.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {patient.date ? format(getPatientDate(patient), "PP") : "N/A"}
+                      </TableCell>
+                      <TableCell>{patient.doctor}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {patient.issues?.map((issue) => (
+                            <Badge key={issue} variant="secondary" className="text-xs">
+                              {issue}
+                            </Badge>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 p-0"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>View Details</DropdownMenuItem>
+                            <DropdownMenuItem>Edit Patient</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-red-600">
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>

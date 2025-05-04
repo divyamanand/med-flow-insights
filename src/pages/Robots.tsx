@@ -11,6 +11,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { getRobotStatus, updateRobotStatus } from "@/lib/firestore";
 import { useQuery } from "@tanstack/react-query";
 
+import { addDocument } from "@/lib/firestore";
+
 // Sample robot tracking data 
 const robotsData = [
   {
@@ -77,11 +79,19 @@ const taskHistory = [
   { day: "Sunday", completed: 30, total: 40 },
 ];
 
+// const addAllRobots = ()=>{
+//   robotsData.forEach((it)=>{
+//   addDocument("robot",it);
+// });
+// }
+
 export default function Robots() {
   const [activeRobots, setActiveRobots] = useState(0);
   const [chargingRobots, setChargingRobots] = useState(0);
   const [maintenanceRobots, setMaintenanceRobots] = useState(0);
   const { toast } = useToast();
+
+
 
   // Use React Query to fetch robot data from Firestore
   const { data: firebaseRobots, isLoading, error } = useQuery({
@@ -116,6 +126,7 @@ export default function Robots() {
   
   return (
     <div className="space-y-6">
+      {/* <button className='bg-slate-600 text-red-600' onClick={() => addAllRobots()}>Click to getDoc</button> */}
       <div>
         <h1 className="text-3xl font-bold">Robot Management</h1>
         <p className="text-muted-foreground">
