@@ -1,4 +1,4 @@
-
+import { addDocument } from "@/lib/firestore";
 import { useState } from "react";
 import {
   Card,
@@ -25,6 +25,8 @@ const bloodInventory = {
   "O+": { available: 42, critical: 25 },
   "O-": { available: 18, critical: 15 }
 };
+
+
 
 // Sample data for donation statistics
 const donationStats = [

@@ -1,5 +1,7 @@
-
-import { useState } from "react";
+import { addDocument,addDoctor, getDocument} from "@/lib/firestore";
+import { useState, useRef,useEffect } from "react";
+import { Doctor } from "@/lib/types";
+import { getCollection } from '@/lib/firestore'
 import {
   Card,
   CardContent,
@@ -32,77 +34,57 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-const doctors = [
-  {
-    id: "D001",
-    name: "Dr. Sarah Johnson",
-    speciality: ["Cardiology"],
-    timings: "9:00 AM - 5:00 PM",
-    room_no: "203",
-    available: true,
-  },
-  {
-    id: "D002",
-    name: "Dr. Michael Brown",
-    speciality: ["General Medicine", "Family Practice"],
-    timings: "8:00 AM - 4:00 PM",
-    room_no: "101",
-    available: true,
-  },
-  {
-    id: "D003",
-    name: "Dr. Jessica Martinez",
-    speciality: ["Surgery", "Orthopedics"],
-    timings: "10:00 AM - 6:00 PM",
-    room_no: "305",
-    available: false,
-  },
-  {
-    id: "D004",
-    name: "Dr. David Lee",
-    speciality: ["Pulmonology", "Critical Care"],
-    timings: "7:00 AM - 7:00 PM",
-    room_no: "ICU-2",
-    available: true,
-  },
-  {
-    id: "D005",
-    name: "Dr. Patricia Wilson",
-    speciality: ["Emergency Medicine", "Trauma"],
-    timings: "Night Shift: 8:00 PM - 8:00 AM",
-    room_no: "ER-1",
-    available: true,
-  },
-  {
-    id: "D006",
-    name: "Dr. Elizabeth Chen",
-    speciality: ["Obstetrics", "Gynecology"],
-    timings: "9:00 AM - 3:00 PM",
-    room_no: "204",
-    available: false,
-  },
-  {
-    id: "D007",
-    name: "Dr. Robert Taylor",
-    speciality: ["Cardiothoracic Surgery"],
-    timings: "8:00 AM - 4:00 PM",
-    room_no: "OR-3",
-    available: true,
-  },
-  {
-    id: "D008",
-    name: "Dr. James Wilson",
-    speciality: ["Neurology", "Stroke Care"],
-    timings: "10:00 AM - 6:00 PM",
-    room_no: "302",
-    available: true,
-  },
-];
+import { addDoc } from "firebase/firestore";
 
 export default function Doctors() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterAvailable, setFilterAvailable] = useState<boolean | null>(null);
+  // Collect form data
+  const nameRef = useRef<HTMLInputElement>(null);
+  const specialityRef = useRef<HTMLInputElement>(null);
+  const timingsRef = useRef<HTMLInputElement>(null);
+  const roomRef = useRef<HTMLInputElement>(null);
+  const [available, setAvailable] = useState(false);
+
+   const [doctors, setDoctors] = useState<Doctor[]>([]);
+    const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDoctors = async () => {
+        const data = await getCollection("doctor");
+        setDoctors(data as Doctor[]);
+        setLoading(false);
+      };
+  
+      fetchDoctors();
+  }, []);
+
+  const saveDoctor = async () => {
+    const doctorData = {
+      name: nameRef.current?.value || "",
+      speciality: specialityRef.current?.value?.split(",").map(s => s.trim()) || [],
+      timings: timingsRef.current?.value || "",
+      room_no: roomRef.current?.value || "",
+      available,
+    };
+
+    try {
+      await addDoctor(doctorData);
+      alert("Doctor added successfully");
+
+      // Clear form
+      if (nameRef.current) nameRef.current.value = "";
+      if (specialityRef.current) specialityRef.current.value = "";
+      if (timingsRef.current) timingsRef.current.value = "";
+      if (roomRef.current) roomRef.current.value = "";
+      setAvailable(false);
+    } catch (error) {
+      console.error("Error adding doctor:", error);
+      alert("Failed to add doctor");
+    }
+};
+
+  
 
   const filteredDoctors = doctors.filter((doctor) => {
     const matchesSearch =
@@ -118,6 +100,7 @@ export default function Doctors() {
 
   return (
     <div className="space-y-6">
+      {/* <button className='bg-slate-600 text-red-600' onClick={() => {console.log(getDocument("doctor","4JxFECjayZj5RWMfoAxH"))}}>Click to getDoc</button> */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Doctors</h1>
@@ -135,42 +118,46 @@ export default function Doctors() {
               <DialogTitle>Add New Doctor</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Full Name
-                </Label>
-                <Input id="name" className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="speciality" className="text-right">
-                  Speciality
-                </Label>
-                <Input id="speciality" className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="timings" className="text-right">
-                  Timings
-                </Label>
-                <Input id="timings" className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="room" className="text-right">
-                  Room No
-                </Label>
-                <Input id="room" className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="available" className="text-right">
-                  Available
-                </Label>
-                <div className="col-span-3 flex items-center space-x-2">
-                  <Switch id="available" />
-                  <Label htmlFor="available">Available for appointments</Label>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Full Name
+              </Label>
+              <Input id="name" className="col-span-3" ref={nameRef} />
+            </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="speciality" className="text-right">
+                    Speciality
+                  </Label>
+                  <Input id="speciality" className="col-span-3" ref={specialityRef} />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="timings" className="text-right">
+                    Timings
+                  </Label>
+                  <Input id="timings" className="col-span-3" ref={timingsRef} />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="room" className="text-right">
+                    Room No
+                  </Label>
+                  <Input id="room" className="col-span-3" ref={roomRef} />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="available" className="text-right">
+                    Available
+                  </Label>
+                  <div className="col-span-3 flex items-center space-x-2">
+                    <Switch 
+                      id="available" 
+                      checked={available} 
+                      onCheckedChange={setAvailable} 
+                    />
+                    <Label htmlFor="available">Available for appointments</Label>
+                  </div>
                 </div>
               </div>
-            </div>
             <DialogFooter>
-              <Button type="submit">Save</Button>
+              <Button onClick={()=>saveDoctor()} type="submit">Save</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -239,10 +226,7 @@ export default function Doctors() {
                         <Avatar>
                           <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${doctor.name}`} />
                           <AvatarFallback>
-                            {doctor.name
-                              .split(" ")[1][0]}
-                            {doctor.name
-                              .split(" ")[2]?.[0] ?? ""}
+                            {doctor.name}
                           </AvatarFallback>
                         </Avatar>
                         <span className="font-medium">{doctor.name}</span>
@@ -288,7 +272,7 @@ export default function Doctors() {
                           <DropdownMenuItem>Send Message</DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-red-600">
-                            Remove
+                          <button onClick={()=>{}}>remove</button>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
