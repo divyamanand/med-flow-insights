@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Timestamp } from "firebase/firestore";
 import { getCollection } from "@/lib/firestore";
-import { BloodItem,SupplyItem } from "@/lib/types";
+import { BloodItem, SupplyItem } from "@/lib/types";
+import { toCompatibleDate, getISOString } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -327,12 +328,12 @@ export default function Supplies() {
                   </TableHeader>
                   <TableBody>
                     {filteredSupplies.map((item) => (
-                      <TableRow key={`${item.item_id}-${item.delivery_date.toISOString()}`}>
+                      <TableRow key={`${item.item_id}-${getISOString(item.delivery_date)}`}>
                         <TableCell>{item.item_id}</TableCell>
                         <TableCell className="font-medium">{item.name}</TableCell>
                         <TableCell>{item.type}</TableCell>
-                        <TableCell>{format(item.delivery_date, "PP")}</TableCell>
-                        <TableCell>{format(item.expiry_date, "PP")}</TableCell>
+                        <TableCell>{format(toCompatibleDate(item.delivery_date), "PP")}</TableCell>
+                        <TableCell>{format(toCompatibleDate(item.expiry_date), "PP")}</TableCell>
                         <TableCell>
                           <Badge
                             variant="outline"
@@ -505,12 +506,12 @@ export default function Supplies() {
                   </TableHeader>
                   <TableBody>
                     {filteredBlood.map((item) => (
-                      <TableRow key={`${item.item_id}-${item.delivery_date.toISOString()}-${item.blood_group}`}>
+                      <TableRow key={`${item.item_id}-${getISOString(item.delivery_date)}-${item.blood_group}`}>
                         <TableCell>{item.item_id}</TableCell>
                         <TableCell className="font-medium">{item.blood_group}</TableCell>
                         <TableCell>{item.type}</TableCell>
-                        <TableCell>{format(item.delivery_date, "PP")}</TableCell>
-                        <TableCell>{format(item.expiry_date, "PP")}</TableCell>
+                        <TableCell>{format(toCompatibleDate(item.delivery_date), "PP")}</TableCell>
+                        <TableCell>{format(toCompatibleDate(item.expiry_date), "PP")}</TableCell>
                         <TableCell>
                           <Badge
                             variant="outline"
@@ -556,4 +557,3 @@ export default function Supplies() {
     </div>
   );
 }
-
