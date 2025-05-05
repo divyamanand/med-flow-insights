@@ -73,6 +73,11 @@ export function AppSidebar() {
       title: "Medicines",
       path: "/medicines",
       icon: BriefcaseMedical
+    },
+    {
+      title: "Prescription",
+      path: "/prescription",
+      icon: Hospital
     }
   ];
 
