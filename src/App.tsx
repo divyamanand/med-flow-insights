@@ -14,6 +14,7 @@ import Robots from "./pages/Robots";
 import NotFound from "./pages/NotFound";
 import MedicinesPage from "./pages/MedicinesPage";
 import Prescription from "./pages/Prescription";
+import DashboardPage from "./components/patient_monitoring/PatientMonitoring";
 import "./lib/firebase";
 
 const queryClient = new QueryClient({
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="robots" element={<Robots />} />
             <Route path="medicines" element={<MedicinesPage />} />
             <Route path="prescription" element={<Prescription />} />
+            <Route path="rtpatientmonitoring" element={<DashboardPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
