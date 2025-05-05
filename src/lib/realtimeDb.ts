@@ -13,9 +13,13 @@ export const subscribeToRobotData = (
     const unsubscribe = onValue(
       robotRef,
       (snapshot) => {
-        const data = snapshot.val() as RobotData;
-        if (data) {
-          console.log("Robot data updated:", data);
+        const rawData = snapshot.val();
+        if (rawData) {
+          // Extract only the obstacle part for our simplified RobotData type
+          const data: RobotData = {
+            obstacle: rawData.obstacle || { left: 0, mid: 0, right: 0 }
+          };
+          console.log("Robot obstacle data updated:", data);
           callback(data);
         } else {
           console.warn("No robot data available from Firebase");

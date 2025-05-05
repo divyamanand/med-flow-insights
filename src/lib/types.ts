@@ -43,7 +43,6 @@ export type BloodItem = {
 };
 
 export type RobotData = {
-  direction: 'straight' | 'left' | 'right' | 'backward';
   obstacle: {
     left: number;
     mid: number;

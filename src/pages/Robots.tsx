@@ -5,13 +5,11 @@ import { useToast } from "@/components/ui/use-toast";
 import { Ambulance, Shield } from "lucide-react";
 import { RobotData } from "@/lib/types";
 import { subscribeToRobotData } from "@/lib/realtimeDb";
-import { DirectionIndicator } from "@/components/robots/DirectionIndicator";
 import { ObstacleDisplay } from "@/components/robots/ObstacleDisplay";
 import { RobotStatus } from "@/components/robots/RobotStatus";
 
 // Sample fallback data if Firebase connection fails
 const fallbackData: RobotData = {
-  direction: "straight",
   obstacle: {
     left: 0,
     mid: 0,
@@ -58,9 +56,6 @@ export default function Robots() {
   // Use fallback data if no data is available yet
   const data = robotData || fallbackData;
 
-  // Debugging output
-  console.log("Current robot direction:", data.direction);
-
   return (
     <div className="space-y-6">
       <div>
@@ -76,7 +71,7 @@ export default function Robots() {
         </div>
       ) : (
         <>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2">
             <Card>
               <CardContent className="p-6">
                 <div className="flex flex-col gap-2">
@@ -85,17 +80,6 @@ export default function Robots() {
                     <Ambulance className="h-5 w-5 text-primary" />
                   </div>
                   <span className="text-3xl font-bold">MR-001</span>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Direction</span>
-                    <Shield className="h-5 w-5 text-green-500" />
-                  </div>
-                  <span className="text-3xl font-bold capitalize">{data.direction}</span>
                 </div>
               </CardContent>
             </Card>
@@ -121,13 +105,7 @@ export default function Robots() {
                 <CardDescription>Real-time monitoring of robot status</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <RobotStatus />
-                  <DirectionIndicator 
-                    direction={data.direction} 
-                    className="h-full flex justify-center items-center"
-                  />
-                </div>
+                <RobotStatus />
               </CardContent>
             </Card>
 
