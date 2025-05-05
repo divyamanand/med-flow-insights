@@ -127,7 +127,7 @@ export default function Robots() {
                 <CardDescription>Real-time monitoring of robot status</CardDescription>
               </CardHeader>
               <CardContent>
-                <RobotStatus />
+                <RobotStatus direction = {data.direction}/>
               </CardContent>
             </Card>
 

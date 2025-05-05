@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +14,6 @@ export function ObstacleDisplay({ obstacles, className }: ObstacleDisplayProps) 
   const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
-    // Trigger animation effect when obstacles change
     setAnimate(true);
     const timer = setTimeout(() => setAnimate(false), 500);
     return () => clearTimeout(timer);
@@ -25,30 +23,22 @@ export function ObstacleDisplay({ obstacles, className }: ObstacleDisplayProps) 
 
   return (
     <div className={cn("flex flex-col items-center", className)}>
-      <div className="text-lg font-medium mb-2">Obstacle Detection</div>
-      <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 rounded-lg w-full">
-        <ObstacleIndicator 
-          value={obstacles.left} 
-          label="Left" 
-          animate={animate} 
-        />
-        <ObstacleIndicator 
-          value={obstacles.mid} 
-          label="Middle" 
-          animate={animate} 
-        />
-        <ObstacleIndicator 
-          value={obstacles.right} 
-          label="Right" 
-          animate={animate} 
-        />
+      <div className="text-xl font-semibold text-slate-800 mb-4">Obstacle Detection</div>
+
+      <div className="grid grid-cols-3 gap-6 p-6 bg-white rounded-xl shadow-md w-full max-w-md">
+        <ObstacleIndicator value={obstacles.left} label="Left" animate={animate} />
+        <ObstacleIndicator value={obstacles.mid} label="Center" animate={animate} />
+        <ObstacleIndicator value={obstacles.right} label="Right" animate={animate} />
       </div>
+
       {hasObstacle && (
-        <div className={cn(
-          "mt-4 py-1 px-3 bg-red-100 text-red-700 rounded-full text-sm font-medium",
-          animate && "animate-pulse"
-        )}>
-          Obstacle Detected!
+        <div
+          className={cn(
+            "mt-5 py-2 px-5 bg-red-100 text-red-800 rounded-full text-sm font-semibold shadow-sm transition-all duration-300",
+            animate && "animate-pulse"
+          )}
+        >
+          ⚠️ Obstacle Detected
         </div>
       )}
     </div>
@@ -63,20 +53,20 @@ interface ObstacleIndicatorProps {
 
 function ObstacleIndicator({ value, label, animate }: ObstacleIndicatorProps) {
   const hasObstacle = value > 0;
-  
+
   return (
-    <div className="flex flex-col items-center">
-      <div className="text-sm text-muted-foreground">{label}</div>
-      <div 
+    <div className="flex flex-col items-center space-y-2">
+      <div className="text-sm font-medium text-slate-600">{label}</div>
+      <div
         className={cn(
-          "w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 mt-2",
-          hasObstacle 
-            ? "bg-red-100 text-red-700 border-2 border-red-300" 
-            : "bg-green-100 text-green-700",
+          "w-16 h-16 rounded-full flex items-center justify-center shadow-inner border transition-all duration-300",
+          hasObstacle
+            ? "bg-red-50 border-red-300 text-red-700 font-bold"
+            : "bg-green-50 border-green-300 text-green-700 font-semibold",
           animate && hasObstacle && "scale-110"
         )}
       >
-        <span className="text-lg font-bold">{value}</span>
+        {value}
       </div>
     </div>
   );
