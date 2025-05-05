@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Ambulance, Shield } from "lucide-react";
+import { Ambulance, Shield, Navigation } from "lucide-react";
 import { RobotData } from "@/lib/types";
 import { subscribeToRobotData } from "@/lib/realtimeDb";
 import { ObstacleDisplay } from "@/components/robots/ObstacleDisplay";
@@ -14,7 +14,8 @@ const fallbackData: RobotData = {
     left: 0,
     mid: 0,
     right: 0,
-  }
+  },
+  direction: 'unknown'
 };
 
 export default function Robots() {
@@ -71,7 +72,7 @@ export default function Robots() {
         </div>
       ) : (
         <>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <Card>
               <CardContent className="p-6">
                 <div className="flex flex-col gap-2">
@@ -83,6 +84,19 @@ export default function Robots() {
                 </div>
               </CardContent>
             </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Direction</span>
+                    <Navigation className="h-5 w-5 text-blue-500" />
+                  </div>
+                  <span className="text-3xl font-bold capitalize">{data.direction}</span>
+                </div>
+              </CardContent>
+            </Card>
+            
             <Card>
               <CardContent className="p-6">
                 <div className="flex flex-col gap-2">
@@ -132,7 +146,7 @@ export default function Robots() {
                 </div>
                 <h3 className="text-lg font-medium">Navigation Map</h3>
                 <p className="text-muted-foreground">
-                  Real-time robot location tracking will be displayed here
+                  Robot direction: <span className="font-medium capitalize">{data.direction}</span>
                 </p>
               </div>
             </CardContent>

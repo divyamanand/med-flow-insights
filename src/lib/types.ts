@@ -48,4 +48,5 @@ export type RobotData = {
     mid: number;
     right: number;
   };
+  direction?: string; // Optional to handle cases where it might not be available
 };
