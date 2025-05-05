@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Ambulance, Shield } from "lucide-react";
@@ -24,11 +24,13 @@ export default function Robots() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const { toast } = useToast();
+  const unsubscribeRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     // Subscribe to robot data from Firebase Realtime Database
-    const unsubscribe = subscribeToRobotData(
+    unsubscribeRef.current = subscribeToRobotData(
       (data) => {
+        console.log("Received robot data:", data);
         setRobotData(data);
         setLoading(false);
       },
@@ -47,11 +49,17 @@ export default function Robots() {
     );
 
     // Cleanup subscription on unmount
-    return () => unsubscribe();
+    return () => {
+      console.log("Cleaning up robot data subscription");
+      unsubscribeRef.current();
+    };
   }, [toast]);
 
   // Use fallback data if no data is available yet
   const data = robotData || fallbackData;
+
+  // Debugging output
+  console.log("Current robot direction:", data.direction);
 
   return (
     <div className="space-y-6">

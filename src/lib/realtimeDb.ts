@@ -9,18 +9,33 @@ export const subscribeToRobotData = (
 ) => {
   const robotRef = ref(rtdb, '/');
   
-  const unsubscribe = onValue(
-    robotRef,
-    (snapshot) => {
-      const data = snapshot.val() as RobotData;
-      callback(data);
-    },
-    (error) => {
-      console.error("Error fetching robot data:", error);
-      errorCallback(error);
-    }
-  );
+  try {
+    const unsubscribe = onValue(
+      robotRef,
+      (snapshot) => {
+        const data = snapshot.val() as RobotData;
+        if (data) {
+          console.log("Robot data updated:", data);
+          callback(data);
+        } else {
+          console.warn("No robot data available from Firebase");
+          errorCallback(new Error("No robot data available"));
+        }
+      },
+      (error) => {
+        console.error("Error fetching robot data:", error);
+        errorCallback(error);
+      }
+    );
 
-  // Return a function that can be used to unsubscribe
-  return () => off(robotRef);
+    // Return a function that can be used to unsubscribe
+    return () => {
+      console.log("Unsubscribing from robot data");
+      off(robotRef);
+    };
+  } catch (error) {
+    console.error("Error setting up robot data subscription:", error);
+    errorCallback(error as Error);
+    return () => {};  // Return empty function as fallback
+  }
 };

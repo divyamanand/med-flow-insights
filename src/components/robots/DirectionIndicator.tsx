@@ -1,9 +1,9 @@
 
 import { useEffect, useState } from "react";
-import { ArrowRight, ArrowLeft, ArrowUp } from "lucide-react";
+import { ArrowRight, ArrowLeft, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Direction = "straight" | "left" | "right";
+type Direction = "straight" | "left" | "right" | "backward";
 
 interface DirectionIndicatorProps {
   direction: Direction;
@@ -28,7 +28,8 @@ export function DirectionIndicator({ direction, className }: DirectionIndicatorP
         animate && "scale-110",
         direction === "left" && "bg-blue-100",
         direction === "right" && "bg-green-100",
-        direction === "straight" && "bg-purple-100"
+        direction === "straight" && "bg-purple-100",
+        direction === "backward" && "bg-orange-100"
       )}>
         {direction === "straight" && (
           <ArrowUp 
@@ -53,6 +54,15 @@ export function DirectionIndicator({ direction, className }: DirectionIndicatorP
             size={48} 
             className={cn(
               "text-green-600 transition-all duration-300", 
+              animate && "animate-pulse"
+            )} 
+          />
+        )}
+        {direction === "backward" && (
+          <ArrowDown 
+            size={48} 
+            className={cn(
+              "text-orange-600 transition-all duration-300", 
               animate && "animate-pulse"
             )} 
           />
