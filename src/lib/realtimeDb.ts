@@ -1,4 +1,3 @@
-
 import { ref, onValue, off, get } from "firebase/database";
 import { rtdb } from "./firebase";
 import { RobotData } from "./types";
@@ -11,37 +10,38 @@ export const subscribeToRobotData = (
   const directionRef = ref(rtdb, '/robot');
   
   try {
-    const unsubscribe = onValue(
+    // Combined data object to keep track of latest values
+    let combinedData: RobotData = {
+      obstacle: { left: 0, mid: 0, right: 0 },
+      direction: 'unknown'
+    };
+
+    // Subscribe to obstacle updates
+    const obstacleUnsubscribe = onValue(
       obstacleRef,
-      async (obstacleSnapshot) => {
+      (obstacleSnapshot) => {
         try {
-          // Get obstacle data
+          // Update obstacle data
           const obstacleData = obstacleSnapshot.val() || { left: 0, mid: 0, right: 0 };
-          
-          // Fetch direction data
-          const directionSnapshot = await get(directionRef);
-          const directionData = directionSnapshot.val();
-          
-          // Combine data
-          const data: RobotData = {
-            obstacle: obstacleData,
-            direction: directionData?.direction || 'unknown'
+          combinedData = {
+            ...combinedData,
+            obstacle: obstacleData
           };
           
-          console.log("Robot data updated:", data);
-          callback(data);
+          console.log("Obstacle data updated:", obstacleData);
+          callback(combinedData);
         } catch (error) {
-          console.error("Error fetching combined robot data:", error);
+          console.error("Error processing obstacle update:", error);
           errorCallback(error as Error);
         }
       },
       (error) => {
-        console.error("Error fetching robot data:", error);
+        console.error("Error fetching obstacle data:", error);
         errorCallback(error);
       }
     );
 
-    // Also subscribe to direction changes
+    // Subscribe to direction updates separately
     const directionUnsubscribe = onValue(
       directionRef,
       (directionSnapshot) => {
@@ -49,19 +49,30 @@ export const subscribeToRobotData = (
           const directionData = directionSnapshot.val();
           if (directionData) {
             console.log("Direction updated:", directionData.direction);
-            // We don't call the callback here as we're combining data above
+            combinedData = {
+              ...combinedData,
+              direction: directionData.direction
+            };
+            
+            // Call the callback with updated combined data
+            callback(combinedData);
           }
         } catch (error) {
           console.error("Error processing direction update:", error);
+          errorCallback(error as Error);
         }
+      },
+      (error) => {
+        console.error("Error fetching direction data:", error);
+        errorCallback(error);
       }
     );
 
     // Return a function that can be used to unsubscribe from both
     return () => {
       console.log("Unsubscribing from robot data");
-      off(obstacleRef);
-      off(directionRef);
+      obstacleUnsubscribe();
+      directionUnsubscribe();
     };
   } catch (error) {
     console.error("Error setting up robot data subscription:", error);
