@@ -1,4 +1,4 @@
-import { addDocument,addDoctor, getDocument} from "@/lib/firestore";
+import { addDoctor} from "@/lib/firestore";
 import { useState, useRef,useEffect } from "react";
 import { Doctor } from "@/lib/types";
 import { getCollection } from '@/lib/firestore'
@@ -31,10 +31,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, MoreHorizontal, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { addDoc } from "firebase/firestore";
+
 
 export default function Doctors() {
   const [searchTerm, setSearchTerm] = useState("");
