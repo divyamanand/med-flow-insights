@@ -1,256 +1,31 @@
 import React from 'react'
-import { useState } from "react"
+import { useState,useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { differenceInDays } from "date-fns"
-import { getDocument,addDocument } from '@/lib/firestore'
-
-// Define the Medicine Batch type
-interface MedicineBatch {
-  id: string
-  quantity: number
-  expirationDate: Date
-  batchNumber: string
-  manufacturer: string
-}
-
-// Define the Medicine type with multiple batches
-interface Medicine {
-  id: string
-  name: string
-  batches: MedicineBatch[]
-}
-
-// Sample data
-const medicinesData: Medicine[] = [
-  {
-    id: "1",
-    name: "MED A",
-    batches: [
-      {
-        id: "1-1",
-        quantity: 3,
-        expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now (valid)
-        batchNumber: "BA-12345",
-        manufacturer: "Pharma Inc.",
-      },
-      {
-        id: "1-2",
-        quantity: 5,
-        expirationDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now (expiring soon)
-        batchNumber: "BA-12346",
-        manufacturer: "Pharma Inc.",
-      },
-      {
-        id: "1-3",
-        quantity: 4,
-        expirationDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago (expired)
-        batchNumber: "BA-12347",
-        manufacturer: "Pharma Inc.",
-      },
-    ],
-  },
-  {
-    id: "2",
-    name: "MED B",
-    batches: [
-      {
-        id: "2-1",
-        quantity: 4,
-        expirationDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now (valid)
-        batchNumber: "BB-67890",
-        manufacturer: "MediCorp",
-      },
-      {
-        id: "2-2",
-        quantity: 5,
-        expirationDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now (expiring soon)
-        batchNumber: "BB-67891",
-        manufacturer: "MediCorp",
-      },
-      {
-        id: "2-3",
-        quantity: 4,
-        expirationDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago (expired)
-        batchNumber: "BB-67892",
-        manufacturer: "MediCorp",
-      },
-    ],
-  },
-  {
-    id: "3",
-    name: "MED C",
-    batches: [
-      {
-        id: "3-1",
-        quantity: 6,
-        expirationDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now (valid)
-        batchNumber: "BC-54321",
-        manufacturer: "HealthPharm",
-      },
-      {
-        id: "3-2",
-        quantity: 3,
-        expirationDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now (expiring soon)
-        batchNumber: "BC-54322",
-        manufacturer: "HealthPharm",
-      },
-      {
-        id: "3-3",
-        quantity: 2,
-        expirationDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago (expired)
-        batchNumber: "BC-54323",
-        manufacturer: "HealthPharm",
-      },
-    ],
-  },
-  {
-    id: "4",
-    name: "MED D",
-    batches: [
-      {
-        id: "4-1",
-        quantity: 8,
-        expirationDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now (valid)
-        batchNumber: "BD-13579",
-        manufacturer: "MedSupply",
-      },
-      {
-        id: "4-2",
-        quantity: 4,
-        expirationDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), // 6 days from now (expiring soon)
-        batchNumber: "BD-13580",
-        manufacturer: "MedSupply",
-      },
-      {
-        id: "4-3",
-        quantity: 3,
-        expirationDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago (expired)
-        batchNumber: "BD-13581",
-        manufacturer: "MedSupply",
-      },
-    ],
-  },
-  {
-    id: "5",
-    name: "MED E",
-    batches: [
-      {
-        id: "5-1",
-        quantity: 7,
-        expirationDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
-        batchNumber: "BE-24680",
-        manufacturer: "Wellness Labs",
-      },
-      {
-        id: "5-2",
-        quantity: 2,
-        expirationDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-        batchNumber: "BE-24681",
-        manufacturer: "Wellness Labs",
-      },
-      {
-        id: "5-3",
-        quantity: 1,
-        expirationDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-        batchNumber: "BE-24682",
-        manufacturer: "Wellness Labs",
-      },
-    ],
-  },
-  {
-    id: "6",
-    name: "MED F",
-    batches: [
-      {
-        id: "6-1",
-        quantity: 5,
-        expirationDate: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000),
-        batchNumber: "BF-36912",
-        manufacturer: "LifeCare",
-      },
-      {
-        id: "6-2",
-        quantity: 6,
-        expirationDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
-        batchNumber: "BF-36913",
-        manufacturer: "LifeCare",
-      },
-      {
-        id: "6-3",
-        quantity: 2,
-        expirationDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-        batchNumber: "BF-36914",
-        manufacturer: "LifeCare",
-      },
-    ],
-  },
-  {
-    id: "7",
-    name: "MED G",
-    batches: [
-      {
-        id: "7-1",
-        quantity: 10,
-        expirationDate: new Date(Date.now() + 75 * 24 * 60 * 60 * 1000),
-        batchNumber: "BG-14725",
-        manufacturer: "Biogenix",
-      },
-      {
-        id: "7-2",
-        quantity: 3,
-        expirationDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000),
-        batchNumber: "BG-14726",
-        manufacturer: "Biogenix",
-      },
-      {
-        id: "7-3",
-        quantity: 2,
-        expirationDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
-        batchNumber: "BG-14727",
-        manufacturer: "Biogenix",
-      },
-    ],
-  },
-  {
-    id: "8",
-    name: "MED H",
-    batches: [
-      {
-        id: "8-1",
-        quantity: 11,
-        expirationDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
-        batchNumber: "BH-85263",
-        manufacturer: "ZenBio",
-      },
-      {
-        id: "8-2",
-        quantity: 2,
-        expirationDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
-        batchNumber: "BH-85264",
-        manufacturer: "ZenBio",
-      },
-      {
-        id: "8-3",
-        quantity: 3,
-        expirationDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-        batchNumber: "BH-85265",
-        manufacturer: "ZenBio",
-      },
-    ],
-  },
-]
-
-// const addAllMedicines = ()=>{
-//   medicinesData.forEach((it)=>{
-//     addDocument("medicine",it);
-//   })
-// }
-
-
+import { getCollection } from '@/lib/firestore'
+import { Medicine,MedicineBatch } from '@/lib/types'
 
 const MedicinesPage = () => {
 
-    const [medicines] = useState<Medicine[]>(medicinesData)
+  const [medicines, setMedicines] = useState<Medicine[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchMedicines = async () => {
+      try {
+        const medicinesData : Medicine[] = await getCollection("medicine") as Medicine[]
+        setMedicines(medicinesData);
+      } catch (err) {
+        setError("Failed to fetch medicines");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMedicines();
+  }, []);
 
   // Function to determine batch status
   const getBatchStatus = (expirationDate: Date) => {
@@ -291,11 +66,20 @@ const MedicinesPage = () => {
     return result
   }
 
+  if (loading) {
+    return <div className="flex h-screen w-full items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+          <p className="text-lg font-medium">Connecting to Firebase...</p>
+        </div>
+      </div>
+  }
+
 
   return (
     <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-6">Medicine Inventory</h1>
-      {/* <button className='bg-slate-600 text-red-600' onClick={() => addAllMedicines()}>Click to getDoc</button> */}
+      
         
             <div className="m-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {medicines.map((medicine) => {

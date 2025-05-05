@@ -1,5 +1,13 @@
-import { addDocument } from "@/lib/firestore";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getCollection } from "@/lib/firestore";
+import {
+  BloodInventory,
+  DonationStat,
+  DonorAgeGroup,
+  MonthlyDonation,
+  BloodRequest,
+  BloodGroup,
+} from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -14,7 +22,6 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
-// Sample data for blood inventory
 const bloodInventory = {
   "A+": { available: 35, critical: 20 },
   "A-": { available: 12, critical: 10 },
@@ -26,78 +33,50 @@ const bloodInventory = {
   "O-": { available: 18, critical: 15 }
 };
 
-
-
-// Sample data for donation statistics
-const donationStats = [
-  { name: "Whole Blood", value: 120, color: "#ef4444" },
-  { name: "Platelets", value: 45, color: "#f59e0b" },
-  { name: "Plasma", value: 60, color: "#3b82f6" },
-  { name: "Red Blood Cells", value: 40, color: "#8b5cf6" },
-];
-
-// Donor demographics data
-const donorAgeData = [
-  { name: "18-24", value: 25, color: "#c7d2fe" },
-  { name: "25-34", value: 35, color: "#a5b4fc" },
-  { name: "35-44", value: 20, color: "#818cf8" },
-  { name: "45-54", value: 15, color: "#6366f1" },
-  { name: "55+", value: 5, color: "#4f46e5" },
-];
-
-// Donation history by month
-const monthlyDonations = [
-  { month: "Jan", donations: 42 },
-  { month: "Feb", donations: 38 },
-  { month: "Mar", donations: 45 },
-  { month: "Apr", donations: 50 },
-  { month: "May", donations: 55 },
-  { month: "Jun", donations: 48 },
-  { month: "Jul", donations: 52 },
-];
-
-// Blood requests data
-const bloodRequests = [
-  {
-    id: "REQ-001",
-    bloodGroup: "O-",
-    quantity: 2,
-    priority: "High",
-    department: "Emergency",
-    requester: "Dr. Sarah Johnson",
-    status: "Pending"
-  },
-  {
-    id: "REQ-002",
-    bloodGroup: "A+",
-    quantity: 1,
-    priority: "Medium",
-    department: "Surgery",
-    requester: "Dr. Michael Brown",
-    status: "Fulfilled"
-  },
-  {
-    id: "REQ-003",
-    bloodGroup: "B+",
-    quantity: 3,
-    priority: "High",
-    department: "ICU",
-    requester: "Dr. Jessica Martinez",
-    status: "Pending"
-  },
-  {
-    id: "REQ-004",
-    bloodGroup: "AB+",
-    quantity: 1,
-    priority: "Low",
-    department: "General Ward",
-    requester: "Dr. David Lee",
-    status: "Fulfilled"
-  }
-];
-
 export default function BloodBank() {
   const [activeTab, setActiveTab] = useState("inventory");
+
+  const [donationStats, setDonationStats] = useState<DonationStat[]>([]);
+  const [donorAgeData, setDonorAgeData] = useState<DonorAgeGroup[]>([]);
+  const [monthlyDonations, setMonthlyDonations] = useState<MonthlyDonation[]>([]);
+  const [bloodRequests, setBloodRequests] = useState<BloodRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        const [
+          
+          donationStatsData,
+          donorAgeDataRaw,
+          monthlyDonationsData,
+          bloodRequestsData,
+        ] = await Promise.all([
+          
+          getCollection("donation_states"),
+          getCollection("donarAgeData"),
+          getCollection("monthlyDonations"),
+          getCollection("bloodRequests"),
+        ]);
+
+        setDonationStats(donationStatsData as DonationStat[]);
+        setDonorAgeData(donorAgeDataRaw as DonorAgeGroup[]);
+        setMonthlyDonations(monthlyDonationsData as MonthlyDonation[]);
+        setBloodRequests(bloodRequestsData as BloodRequest[]);
+        setError(null);
+      } catch (err: any) {
+        setError("Failed to fetch data from Firestore.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const criticalBloodTypes = Object.entries(bloodInventory)
     .filter(([_, data]) => data.available <= data.critical)
@@ -111,7 +90,6 @@ export default function BloodBank() {
           Manage blood inventory and donation tracking
         </p>
       </div>
-
       {criticalBloodTypes.length > 0 && (
         <Card className="border-red-200 bg-red-50">
           <CardContent className="p-4">
@@ -576,3 +554,9 @@ export default function BloodBank() {
     </div>
   );
 }
+
+
+
+
+
+
