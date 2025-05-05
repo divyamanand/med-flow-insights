@@ -25,7 +25,8 @@ import {
   Settings,
   User,
   Users,
-  BriefcaseMedical
+  BriefcaseMedical,
+  Activity
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -73,6 +74,11 @@ export function AppSidebar() {
       title: "Medicines",
       path: "/medicines",
       icon: BriefcaseMedical
+    },
+    {
+      title: "Patient Monitoring",
+      path: "/rtpatientmonitoring",
+      icon: Activity
     }
   ];
 
