@@ -1,3 +1,4 @@
+
 import { Timestamp } from 'firebase/firestore';
 
 export type Doctor = {
@@ -39,4 +40,13 @@ export type BloodItem = {
   delivery_date: Timestamp | Date;
   expiry_date: Timestamp | Date;
   expired: boolean;
+};
+
+export type RobotData = {
+  direction: 'straight' | 'left' | 'right';
+  obstacle: {
+    left: number;
+    mid: number;
+    right: number;
+  };
 };
