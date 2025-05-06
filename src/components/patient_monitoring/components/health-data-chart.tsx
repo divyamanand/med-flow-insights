@@ -1,3 +1,4 @@
+
 "use client"
 
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
@@ -18,15 +19,17 @@ export function HealthDataChart({ data, dataKey, color, name, unit }: HealthData
     [dataKey]: typeof item[dataKey] === "number" ? item[dataKey] : 0,
   }))
 
+  // Create a config object that matches the ChartConfig type
+  const config: Record<string, { label: string; color: string }> = {
+    [dataKey]: {
+      label: name,
+      color: color,
+    },
+  }
+
   return (
     <ChartContainer
-      config={{
-        [dataKey]: {
-          label: name,
-          color: color,
-          unit: unit,
-        },
-      }}
+      config={config}
       className="h-[300px]"
     >
       <ResponsiveContainer width="100%" height="100%">
@@ -54,7 +57,13 @@ export function HealthDataChart({ data, dataKey, color, name, unit }: HealthData
             }}
           />
           <YAxis />
-          <ChartTooltip content={<ChartTooltipContent />} />
+          <ChartTooltip 
+            content={
+              <ChartTooltipContent 
+                formatter={(value) => `${value} ${unit}`} 
+              />
+            } 
+          />
           <Area type="monotone" dataKey={dataKey} stroke={color} fillOpacity={1} fill={`url(#gradient-${dataKey})`} />
         </AreaChart>
       </ResponsiveContainer>
