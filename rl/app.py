@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import numpy as np
 from stable_baselines3 import DQN
 from .hospital_env.HospitalEnv import HospitalInventoryEnvv  # Adjust import as needed
