@@ -1,3 +1,4 @@
+
 import { ref, onValue, off, get } from "firebase/database";
 import { rtdb } from "./firebase";
 import { RobotData } from "./types";
@@ -8,12 +9,14 @@ export const subscribeToRobotData = (
 ) => {
   const obstacleRef = ref(rtdb, '/obstacle');
   const directionRef = ref(rtdb, '/robot');
+  const rfidsRef = ref(rtdb, '/rfids');
   
   try {
     // Combined data object to keep track of latest values
     let combinedData: RobotData = {
       obstacle: { left: 0, mid: 0, right: 0 },
-      direction: 'unknown'
+      direction: 'unknown',
+      rfids: {}
     };
 
     // Subscribe to obstacle updates
@@ -68,11 +71,37 @@ export const subscribeToRobotData = (
       }
     );
 
-    // Return a function that can be used to unsubscribe from both
+    // Subscribe to RFID updates
+    const rfidsUnsubscribe = onValue(
+      rfidsRef,
+      (rfidsSnapshot) => {
+        try {
+          const rfidsData = rfidsSnapshot.val() || {};
+          console.log("RFID data updated:", rfidsData);
+          combinedData = {
+            ...combinedData,
+            rfids: rfidsData
+          };
+          
+          // Call the callback with updated combined data
+          callback(combinedData);
+        } catch (error) {
+          console.error("Error processing RFID update:", error);
+          errorCallback(error as Error);
+        }
+      },
+      (error) => {
+        console.error("Error fetching RFID data:", error);
+        errorCallback(error);
+      }
+    );
+
+    // Return a function that can be used to unsubscribe from all
     return () => {
       console.log("Unsubscribing from robot data");
       obstacleUnsubscribe();
       directionUnsubscribe();
+      rfidsUnsubscribe();
     };
   } catch (error) {
     console.error("Error setting up robot data subscription:", error);

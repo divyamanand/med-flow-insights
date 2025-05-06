@@ -1,11 +1,13 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface RobotStatusProps {
   className?: string;
   direction: string;
+  rfids?: Record<string, string>;
 }
 
 const directionMap: Record<string, { label: string; rotation: number }> = {
@@ -16,10 +18,11 @@ const directionMap: Record<string, { label: string; rotation: number }> = {
   blocked: { label: "Blocked", rotation: 0 },
 };
 
-export function RobotStatus({ className, direction }: RobotStatusProps) {
+export function RobotStatus({ className, direction, rfids = {} }: RobotStatusProps) {
   const dir = direction.toLowerCase();
   const directionInfo = directionMap[dir] ?? { label: "Unknown", rotation: 0 };
   const isBlocked = dir === "blocked";
+  const itemsCount = Object.keys(rfids).length;
 
   return (
     <Card className={className}>
@@ -50,6 +53,23 @@ export function RobotStatus({ className, direction }: RobotStatusProps) {
                 <span className="h-2 w-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
                 <span className="font-medium">Online & Operational</span>
               </div>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">
+                Items <Badge variant="secondary" className="ml-1">{itemsCount}</Badge>
+              </p>
+              {itemsCount > 0 ? (
+                <div className="grid grid-cols-1 gap-1 mt-2">
+                  {Object.entries(rfids).map(([id, name]) => (
+                    <div key={id} className="flex items-center bg-slate-50 p-2 rounded-md">
+                      <Package className="h-4 w-4 text-blue-500 mr-2" />
+                      <span className="text-sm font-medium">{name}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No items</p>
+              )}
             </div>
           </div>
 

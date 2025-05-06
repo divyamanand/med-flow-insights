@@ -1,4 +1,3 @@
-
 import { Timestamp } from 'firebase/firestore';
 
 export type Doctor = {
@@ -48,7 +47,8 @@ export type RobotData = {
     mid: number;
     right: number;
   };
-  direction?: string; // Optional to handle cases where it might not be available
+  direction: string;
+  rfids?: Record<string, string>; // Add RFID data type
 };
 
 export type MedicineBatch = {
@@ -115,4 +115,3 @@ export type BloodRequest = {
   fulfilledAt?: Timestamp;
   notes?: string;
 };
-

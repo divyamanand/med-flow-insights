@@ -1,7 +1,8 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Ambulance, Shield, Navigation } from "lucide-react";
+import { Ambulance, Shield, Navigation, Package } from "lucide-react";
 import { RobotData } from "@/lib/types";
 import { subscribeToRobotData } from "@/lib/realtimeDb";
 import { ObstacleDisplay } from "@/components/robots/ObstacleDisplay";
@@ -14,7 +15,8 @@ const fallbackData: RobotData = {
     mid: 0,
     right: 0,
   },
-  direction: 'unknown'
+  direction: 'unknown',
+  rfids: {}
 };
 
 export default function Robots() {
@@ -61,6 +63,9 @@ export default function Robots() {
 
   // Use fallback data if no data is available yet
   const data = robotData || fallbackData;
+  
+  // Count items being carried by robot
+  const itemCount = data.rfids ? Object.keys(data.rfids).length : 0;
 
   return (
     <div className="space-y-6">
@@ -109,11 +114,11 @@ export default function Robots() {
               <CardContent className="p-6">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Obstacles</span>
-                    <Shield className="h-5 w-5 text-amber-500" />
+                    <span className="text-muted-foreground">Items Carrying</span>
+                    <Package className="h-5 w-5 text-amber-500" />
                   </div>
                   <span className="text-3xl font-bold">
-                    {data.obstacle.left + data.obstacle.mid + data.obstacle.right}
+                    {itemCount}
                   </span>
                 </div>
               </CardContent>
@@ -127,7 +132,7 @@ export default function Robots() {
                 <CardDescription>Real-time monitoring of robot status</CardDescription>
               </CardHeader>
               <CardContent>
-                <RobotStatus direction = {data.direction}/>
+                <RobotStatus direction={data.direction} rfids={data.rfids} />
               </CardContent>
             </Card>
 
@@ -157,6 +162,11 @@ export default function Robots() {
                   Robot direction: <span className="font-medium capitalize">{data.direction}</span>
                   <span className="ml-1 text-blue-500 animate-pulse">●</span>
                 </p>
+                {itemCount > 0 && (
+                  <p className="text-muted-foreground mt-2">
+                    Carrying: <span className="font-medium">{itemCount} items</span>
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
