@@ -44,7 +44,7 @@ export default function Patients() {
   useEffect(() => {
     const fetchPatients = async () => {
       try {
-        const data = await getCollection("patient"); // Changed from "doctor" to "patients"
+        const data = await getCollection("patient");
         if (data) {
           setPatients(data as Patient[]);
         } else {
@@ -126,7 +126,13 @@ export default function Patients() {
                 <Label htmlFor="type" className="text-right">
                   Type
                 </Label>
-                <Input id="type" className="col-span-3" />
+                <select id="type" className="col-span-3 border border-input rounded-md px-3 py-2">
+                  <option value="">Select type</option>
+                  <option value="Regular">Regular</option>
+                  <option value="Emergency">Emergency</option>
+                  <option value="Surgery">Surgery</option>
+                  <option value="ICU">ICU</option>
+                </select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="doctor" className="text-right">

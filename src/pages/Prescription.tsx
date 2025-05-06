@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getCollection, addDocument } from '@/lib/firebase-utils';
+import { getCollection, updateDocument } from '@/lib/firebase-utils';
 import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
@@ -39,41 +39,36 @@ import {
 interface Patient {
   id: string;
   name: string;
+  prescriptions?: Prescription[];
 }
 
 interface Prescription {
-  id: string;
-  patientId: string;
-  patientName: string;
-  medicines: { name: string; quantity: number }[];
+  medicines: { name: string; quantity: number; status: boolean }[];
   bloodBottles: number;
+  bloodGroup: string;
   date: Date;
 }
 
 export default function Prescription() {
   const navigate = useNavigate();
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<string>('');
-  const [medicineName, setMedicineName] = useState('');   
+  const [medicineName, setMedicineName] = useState('');
   const [medicineQuantity, setMedicineQuantity] = useState('');
   const [bloodBottles, setBloodBottles] = useState('');
-  const [medicines, setMedicines] = useState<{ name: string; quantity: number }[]>([]);
+  const [bloodGroup, setBloodGroup] = useState('');
+  const [medicines, setMedicines] = useState<{ name: string; quantity: number; status: boolean }[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const patientsData = await getCollection('patients');
-        const prescriptionsData = await getCollection('prescriptions');
+        const patientsData = await getCollection('patient');
         if (patientsData) {
           setPatients(patientsData as Patient[]);
         }
-        if (prescriptionsData) {
-          setPrescriptions(prescriptionsData as Prescription[]);
-        }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching patients:', error);
       }
     };
     fetchData();
@@ -81,37 +76,48 @@ export default function Prescription() {
 
   const addMedicine = () => {
     if (medicineName && medicineQuantity) {
-      setMedicines([...medicines, { name: medicineName, quantity: parseInt(medicineQuantity) }]);
+      setMedicines([...medicines, { name: medicineName, quantity: parseInt(medicineQuantity),status: false }]);
       setMedicineName('');
       setMedicineQuantity('');
     }
   };
 
   const handleSubmit = async () => {
-    if (!selectedPatient || medicines.length === 0) return;
+    if (!selectedPatient || medicines.length === 0 || !bloodGroup) return;
 
     const selectedPatientData = patients.find(p => p.id === selectedPatient);
     if (!selectedPatientData) return;
 
-    const newPrescription: Omit<Prescription, 'id'> = {
-      patientId: selectedPatient,
-      patientName: selectedPatientData.name,
+    const newPrescription: Prescription = {
       medicines,
       bloodBottles: parseInt(bloodBottles) || 0,
-      date: new Date()
+      bloodGroup,
+      date: new Date(),
     };
 
     try {
-      const docRef = await addDocument('prescriptions', newPrescription);
-      setPrescriptions([{ id: docRef, ...newPrescription }, ...prescriptions]);
-      
-      // Reset form and close dialog
+      const updatedPrescriptions = [
+        ...(selectedPatientData.prescriptions || []),
+        newPrescription
+      ];
+
+      await updateDocument('patient', selectedPatient, {
+        prescriptions: updatedPrescriptions
+      });
+
+      setPatients(prev =>
+        prev.map(p =>
+          p.id === selectedPatient ? { ...p, prescriptions: updatedPrescriptions } : p
+        )
+      );
+
       setSelectedPatient('');
       setMedicines([]);
       setBloodBottles('');
+      setBloodGroup('');
       setIsDialogOpen(false);
     } catch (error) {
-      console.error('Error adding prescription:', error);
+      console.error('Error updating patient with new prescription:', error);
     }
   };
 
@@ -190,6 +196,20 @@ export default function Prescription() {
                   onChange={(e) => setBloodBottles(e.target.value)}
                 />
               </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="blood-group">Blood Group</Label>
+                <Select value={bloodGroup} onValueChange={setBloodGroup}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select blood group" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(bg => (
+                      <SelectItem key={bg} value={bg}>{bg}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <DialogFooter>
               <Button onClick={handleSubmit}>Create Prescription</Button>
@@ -210,24 +230,32 @@ export default function Prescription() {
                 <TableHead>Patient Name</TableHead>
                 <TableHead>Medicines</TableHead>
                 <TableHead>Blood Bottles</TableHead>
+                <TableHead>Blood Group</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {prescriptions.map((prescription) => (
-                <TableRow key={prescription.id}>
-                  <TableCell>{prescription.patientName}</TableCell>
-                  <TableCell>
-                    {prescription.medicines.map((med, index) => (
-                      <div key={index}>
-                        {med.name} ({med.quantity})
-                      </div>
-                    ))}
-                  </TableCell>
-                  <TableCell>{prescription.bloodBottles}</TableCell>
-                  <TableCell>{new Date(prescription.date).toLocaleDateString()}</TableCell>
-                </TableRow>
-              ))}
+              {patients
+                .filter(p => p.prescriptions && p.prescriptions.length > 0)
+                .flatMap(patient =>
+                  patient.prescriptions!.map((prescription, index) => (
+                    <TableRow key={`${patient.id}-${index}`}>
+                      <TableCell>{patient.name}</TableCell>
+                      <TableCell>
+                        {prescription.medicines.map((med, i) => (
+                          <div key={i}>{med.name} ({med.quantity})</div>
+                        ))}
+                      </TableCell>
+                      <TableCell>{prescription.bloodBottles}</TableCell>
+                      <TableCell>{prescription.bloodGroup}</TableCell>
+                      <TableCell>
+                        {prescription.medicines.every(med => med.status) ? 'Completed' : 'Pending'}
+                      </TableCell>
+                      <TableCell>{new Date(prescription.date).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  ))
+                )}
             </TableBody>
           </Table>
         </CardContent>

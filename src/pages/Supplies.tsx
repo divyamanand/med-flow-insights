@@ -233,6 +233,12 @@ export default function Supplies() {
                       <Input id="type" className="col-span-3" />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="quantity" className="text-right">
+                        Quantity
+                      </Label>
+                      <Input id="quantity" className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="delivery" className="text-right">
                         Delivery Date
                       </Label>
@@ -243,6 +249,12 @@ export default function Supplies() {
                         Expiry Date
                       </Label>
                       <Input id="expiry" type="date" className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="life" className="text-right">
+                        Shelf Life
+                      </Label>
+                      <Input id="life" className="col-span-3" />
                     </div>
                   </div>
                   <DialogFooter>
