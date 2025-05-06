@@ -1,9 +1,11 @@
+
 import React from 'react'
-import { useState,useEffect } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { differenceInDays } from "date-fns"
 import { getCollection } from '@/lib/firestore'
-import { Medicine,MedicineBatch } from '@/lib/types'
+import { Medicine, MedicineBatch } from '@/lib/types'
+import { toCompatibleDate } from '@/lib/utils' // Import the utility function
 
 const MedicinesPage = () => {
 
@@ -28,9 +30,13 @@ const MedicinesPage = () => {
   }, []);
 
   // Function to determine batch status
-  const getBatchStatus = (expirationDate: Date) => {
+  const getBatchStatus = (expirationDate: Date | null) => {
+    if (!expirationDate) return "unknown"
+    
     const today = new Date()
-    const daysRemaining = differenceInDays(expirationDate, today)
+    // Convert Timestamp to Date if needed
+    const expDate = toCompatibleDate(expirationDate)
+    const daysRemaining = differenceInDays(expDate, today)
 
     if (daysRemaining < 0) {
       return "expired"
@@ -51,14 +57,15 @@ const MedicinesPage = () => {
     }
 
     medicine.batches.forEach((batch) => {
-      const status = getBatchStatus(batch.expirationDate)
+      // Convert batch.expirationDate to a compatible Date object
+      const status = getBatchStatus(toCompatibleDate(batch.expirationDate))
       result.total += batch.quantity
 
       if (status === "expired") {
         result.expired += batch.quantity
       } else if (status === "expiring-soon") {
         result.expiringSoon += batch.quantity
-      } else {
+      } else if (status === "valid") {
         result.valid += batch.quantity
       }
     })

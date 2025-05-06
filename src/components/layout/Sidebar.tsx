@@ -26,7 +26,8 @@ import {
   User,
   Users,
   BriefcaseMedical,
-  Activity
+  Activity,
+  TrendingUp
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -84,6 +85,11 @@ export function AppSidebar() {
       title: "Patient Monitoring",
       path: "/rtpatientmonitoring",
       icon: Activity
+    },
+    {
+      title: "Inventory Prediction",
+      path: "/inventory-prediction",
+      icon: TrendingUp
     }
   ];
 
