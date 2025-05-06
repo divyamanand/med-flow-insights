@@ -1,16 +1,24 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
 from stable_baselines3 import DQN
-from hospital_env.HospitalEnv import HospitalInventoryEnvv  # Update with correct import if needed
+from .hospital_env.HospitalEnv import HospitalInventoryEnvv  # Adjust import as needed
 
 app = FastAPI()
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
+
 # Initialize environment and load model
 env = HospitalInventoryEnvv()
-model = DQN.load("dqn_inventory")  # Ensure this file is in your working directory
+model = DQN.load("dqn_inventory.zip")  # Ensure the model is correctly loaded
 
-# Define input data model
 class Observation(BaseModel):
     inventory: list[float]
     pipeline: list[float]
@@ -18,8 +26,6 @@ class Observation(BaseModel):
 
 @app.post("/predict/")
 def predict(obs: Observation):
-    # Ensure the observation matches the expected input shape
     obs_array = np.array(obs.inventory + obs.pipeline + [obs.forecast], dtype=np.float32)
     action, _ = model.predict(obs_array, deterministic=True)
     return {"action": int(action)}
-

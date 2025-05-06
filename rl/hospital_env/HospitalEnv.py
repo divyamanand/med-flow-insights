@@ -135,9 +135,5 @@ class HospitalInventoryEnvv(gym.Env):
         print(f"Forecast for next day: {self.forecast:.2f}")
 
 
-register(
-id='HospitalInventory-v1',
-entry_point='__main__:HospitalInventoryEnvv',
-)
 
 
