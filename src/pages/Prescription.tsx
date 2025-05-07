@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -65,7 +66,79 @@ export default function Prescription() {
       try {
         const patientsData = await getCollection('patient');
         if (patientsData) {
-          setPatients(patientsData as Patient[]);
+          // Add demo prescriptions to patients if they don't have any
+          const enhancedPatients = patientsData.map((patient: Patient) => {
+            if (!patient.prescriptions || patient.prescriptions.length === 0) {
+              const demoMeds = [
+                { name: "Paracetamol", quantity: 10, status: true },
+                { name: "Amoxicillin", quantity: 15, status: false }
+              ];
+              
+              return {
+                ...patient,
+                prescriptions: [
+                  {
+                    medicines: demoMeds,
+                    bloodBottles: 2,
+                    bloodGroup: "A+",
+                    date: new Date()
+                  }
+                ]
+              };
+            }
+            return patient;
+          });
+          
+          // Add demo patients with prescriptions
+          const demoPatientsWithPrescriptions: Patient[] = [
+            {
+              id: "demoP001",
+              name: "Alex Johnson",
+              prescriptions: [
+                {
+                  medicines: [
+                    { name: "Ibuprofen", quantity: 20, status: false },
+                    { name: "Vitamin D", quantity: 30, status: true }
+                  ],
+                  bloodBottles: 0,
+                  bloodGroup: "O+",
+                  date: new Date()
+                }
+              ]
+            },
+            {
+              id: "demoP002",
+              name: "Maria Garcia",
+              prescriptions: [
+                {
+                  medicines: [
+                    { name: "Insulin", quantity: 5, status: false },
+                    { name: "Metformin", quantity: 30, status: true }
+                  ],
+                  bloodBottles: 1,
+                  bloodGroup: "B-",
+                  date: new Date()
+                }
+              ]
+            },
+            {
+              id: "demoP003",
+              name: "James Wilson",
+              prescriptions: [
+                {
+                  medicines: [
+                    { name: "Lipitor", quantity: 30, status: true },
+                    { name: "Aspirin", quantity: 20, status: true }
+                  ],
+                  bloodBottles: 0,
+                  bloodGroup: "AB+",
+                  date: new Date()
+                }
+              ]
+            }
+          ];
+          
+          setPatients([...enhancedPatients, ...demoPatientsWithPrescriptions]);
         }
       } catch (error) {
         console.error('Error fetching patients:', error);
@@ -232,7 +305,6 @@ export default function Prescription() {
                 <TableHead>Blood Bottles</TableHead>
                 <TableHead>Blood Group</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -252,7 +324,6 @@ export default function Prescription() {
                       <TableCell>
                         {prescription.medicines.every(med => med.status) ? 'Completed' : 'Pending'}
                       </TableCell>
-                      <TableCell>{new Date(prescription.date).toLocaleDateString()}</TableCell>
                     </TableRow>
                   ))
                 )}
