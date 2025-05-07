@@ -15,7 +15,6 @@ import NotFound from "./pages/NotFound";
 import MedicinesPage from "./pages/MedicinesPage";
 import Prescription from "./pages/Prescription";
 import DashboardPage from "./components/patient_monitoring/PatientMonitoring";
-import InventoryPrediction from "./pages/InventoryPrediction";
 import "./lib/firebase";
 
 const queryClient = new QueryClient({
@@ -44,7 +43,6 @@ const App = () => (
             <Route path="medicines" element={<MedicinesPage />} />
             <Route path="prescription" element={<Prescription />} />
             <Route path="rtpatientmonitoring" element={<DashboardPage />} />
-            <Route path="inventory-prediction" element={<InventoryPrediction />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

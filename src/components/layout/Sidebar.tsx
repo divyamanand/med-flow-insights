@@ -15,19 +15,15 @@ import {
 } from "@/components/ui/sidebar";
 import {
   BookOpen,
-  Calendar,
-  Database,
   Heart,
   Home,
   Hospital,
   LayoutDashboard,
   LogOut,
-  Settings,
   User,
   Users,
   BriefcaseMedical,
   Activity,
-  TrendingUp
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -54,7 +50,7 @@ export function AppSidebar() {
     {
       title: "Supplies",
       path: "/supplies",
-      icon: Database,
+      icon: Home,
     },
     {
       title: "Blood Bank",
@@ -65,11 +61,6 @@ export function AppSidebar() {
       title: "Robots",
       path: "/robots",
       icon: Hospital,
-    },
-    {
-      title: "Calendar",
-      path: "/calendar",
-      icon: Calendar,
     },
     {
       title: "Medicines",
@@ -85,11 +76,6 @@ export function AppSidebar() {
       title: "Patient Monitoring",
       path: "/rtpatientmonitoring",
       icon: Activity
-    },
-    {
-      title: "Inventory Prediction",
-      path: "/inventory-prediction",
-      icon: TrendingUp
     }
   ];
 
@@ -122,26 +108,6 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Settings</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  className={cn(
-                    location.pathname === "/settings" && "bg-primary/10 text-primary"
-                  )}
-                >
-                  <Link to="/settings">
-                    <Settings className="h-4 w-4" />
-                    <span>Settings</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
