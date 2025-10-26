@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import { Timestamp } from "firebase/firestore";
-import { getCollection } from "@/lib/firestore";
 import { BloodItem, SupplyItem } from "@/lib/types";
 import { toCompatibleDate, getISOString } from "@/lib/utils";
 import {
@@ -53,48 +51,11 @@ export default function Supplies() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-
-      // Fetch supplies
-      const suppliesData = await getCollection("supply");
-      const formattedSupplies = suppliesData.map((item: any) => ({
-        id: item.id,
-        item_id: item.item_id,
-        name: item.name,
-        type: item.type,
-        delivery_date: getDate(item.delivery_date),
-        expiry_date: getDate(item.expiry_date),
-        expired: checkIfExpired(item.expiry_date),
-      })) as SupplyItem[];
-      setSupplies(formattedSupplies);
-      console.log("Fetched supplies:", formattedSupplies);
-
-      // Fetch blood inventory
-      const bloodData = await getCollection("blood_inventory");
-      const formattedBlood = bloodData.map((item: any) => ({
-        id: item.id,
-        item_id: item.item_id,
-        blood_group: item.blood_group,
-        type: item.type,
-        delivery_date: getDate(item.delivery_date),
-        expiry_date: getDate(item.expiry_date),
-        expired: checkIfExpired(item.expiry_date),
-      })) as BloodItem[];
-      setBloodInventory(formattedBlood);
-      console.log("Fetched blood inventory:", formattedBlood);
-
-    } catch (err) {
-      console.error("Error fetching data:", err);
-      setError("Failed to load inventory data");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchData();
-}, []);
+    // TODO: Backend needs inventory endpoints
+    setSupplies([]);
+    setBloodInventory([]);
+    setLoading(false);
+  }, []);
 
   const checkIfExpired = (date: Timestamp | Date | undefined): boolean => {
     if (!date) return true;

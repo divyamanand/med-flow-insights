@@ -1,4 +1,3 @@
-import { getCollection } from '@/lib/firestore'
 import { useState, useEffect } from 'react';
 import { Patient } from '@/lib/types';
 import { getPatientDate } from '@/lib/utils';
@@ -42,23 +41,30 @@ export default function Patients() {
   const [filterType, setFilterType] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchPatients = async () => {
-      try {
-        const data = await getCollection("patient");
-        if (data) {
-          setPatients(data as Patient[]);
-        } else {
-          setError("No patients data found");
-        }
-      } catch (err) {
-        setError("Failed to fetch patients");
-        console.error(err);
-      } finally {
-        setLoading(false);
+    // TODO: Backend needs GET /api/patients endpoint
+    // For now using demo data
+    const demoPatients: Patient[] = [
+      {
+        id: '1',
+        name: 'John Smith',
+        ipd_no: 'IPD001',
+        type: 'Regular',
+        date: new Date(),
+        doctor: 'Dr. Sarah Johnson',
+        issues: ['Fever', 'Cough']
+      },
+      {
+        id: '2',
+        name: 'Emma Wilson',
+        ipd_no: 'IPD002',
+        type: 'Emergency',
+        date: new Date(),
+        doctor: 'Dr. Michael Brown',
+        issues: ['Fracture']
       }
-    };
-
-    fetchPatients();
+    ];
+    setPatients(demoPatients);
+    setLoading(false);
   }, []);
 
   const filteredPatients: Patient[] = (patients || []).filter((patient) => {
@@ -82,7 +88,7 @@ export default function Patients() {
     return <div className="flex h-screen w-full items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
-          <p className="text-lg font-medium">Connecting to Firebase...</p>
+          <p className="text-lg font-medium">Loading patients...</p>
         </div>
       </div>
   }

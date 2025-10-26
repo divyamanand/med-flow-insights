@@ -1,7 +1,6 @@
-import { addDoctor} from "@/lib/firestore";
-import { useState, useRef,useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Doctor } from "@/lib/types";
-import { getCollection } from '@/lib/firestore'
+import { staffService } from "@/services/staff.service";
 import {
   Card,
   CardContent,
@@ -50,12 +49,37 @@ export default function Doctors() {
 
   useEffect(() => {
     const fetchDoctors = async () => {
-        const data = await getCollection("doctor");
-        setDoctors(data as Doctor[]);
+      try {
+        const data = await staffService.listDoctors();
+        // Map backend response to Doctor type
+        const mappedDoctors: Doctor[] = data.map((doc: any) => ({
+          id: doc.id,
+          name: doc.name,
+          speciality: doc.specialities || [],
+          timings: doc.timings || 'Not specified',
+          room_no: doc.room || 'N/A',
+          available: doc.available !== false,
+        }));
+        setDoctors(mappedDoctors);
+      } catch (error) {
+        console.error('Error fetching doctors:', error);
+        // Use demo data as fallback
+        setDoctors([
+          {
+            id: '1',
+            name: 'Dr. Sarah Johnson',
+            speciality: ['Cardiology', 'Internal Medicine'],
+            timings: '9:00 AM - 5:00 PM',
+            room_no: '301',
+            available: true,
+          }
+        ]);
+      } finally {
         setLoading(false);
-      };
-  
-      fetchDoctors();
+      }
+    };
+
+    fetchDoctors();
   }, []);
 
   const saveDoctor = async () => {
@@ -68,8 +92,10 @@ export default function Doctors() {
     };
 
     try {
-      await addDoctor(doctorData);
-      alert("Doctor added successfully");
+      // TODO: Implement backend doctor creation flow
+      // 1. Create staff: await staffService.createStaff(...)
+      // 2. Create doctor: await staffService.createDoctor(...)
+      alert("Note: Backend integration pending. This would create a new doctor.");
 
       // Clear form
       if (nameRef.current) nameRef.current.value = "";
@@ -81,7 +107,7 @@ export default function Doctors() {
       console.error("Error adding doctor:", error);
       alert("Failed to add doctor");
     }
-};
+  };
 
   
 
@@ -101,7 +127,7 @@ export default function Doctors() {
     return <div className="flex h-screen w-full items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
-          <p className="text-lg font-medium">Connecting to Firebase...</p>
+          <p className="text-lg font-medium">Loading doctors...</p>
         </div>
       </div>
   }

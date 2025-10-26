@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -26,7 +25,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getCollection, updateDocument } from '@/lib/firebase-utils';
 import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
@@ -62,89 +60,41 @@ export default function Prescription() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const patientsData = await getCollection('patient');
-        if (patientsData) {
-          // Add demo prescriptions to patients if they don't have any
-          const enhancedPatients = patientsData.map((patient: Patient) => {
-            if (!patient.prescriptions || patient.prescriptions.length === 0) {
-              const demoMeds = [
-                { name: "Paracetamol", quantity: 10, status: true },
-                { name: "Amoxicillin", quantity: 15, status: false }
-              ];
-              
-              return {
-                ...patient,
-                prescriptions: [
-                  {
-                    medicines: demoMeds,
-                    bloodBottles: 2,
-                    bloodGroup: "A+",
-                    date: new Date()
-                  }
-                ]
-              };
-            }
-            return patient;
-          });
-          
-          // Add demo patients with prescriptions
-          const demoPatientsWithPrescriptions: Patient[] = [
-            {
-              id: "demoP001",
-              name: "Alex Johnson",
-              prescriptions: [
-                {
-                  medicines: [
-                    { name: "Ibuprofen", quantity: 20, status: false },
-                    { name: "Vitamin D", quantity: 30, status: true }
-                  ],
-                  bloodBottles: 0,
-                  bloodGroup: "O+",
-                  date: new Date()
-                }
-              ]
-            },
-            {
-              id: "demoP002",
-              name: "Maria Garcia",
-              prescriptions: [
-                {
-                  medicines: [
-                    { name: "Insulin", quantity: 5, status: false },
-                    { name: "Metformin", quantity: 30, status: true }
-                  ],
-                  bloodBottles: 1,
-                  bloodGroup: "B-",
-                  date: new Date()
-                }
-              ]
-            },
-            {
-              id: "demoP003",
-              name: "James Wilson",
-              prescriptions: [
-                {
-                  medicines: [
-                    { name: "Lipitor", quantity: 30, status: true },
-                    { name: "Aspirin", quantity: 20, status: true }
-                  ],
-                  bloodBottles: 0,
-                  bloodGroup: "AB+",
-                  date: new Date()
-                }
-              ]
-            }
-          ];
-          
-          setPatients([...enhancedPatients, ...demoPatientsWithPrescriptions]);
-        }
-      } catch (error) {
-        console.error('Error fetching patients:', error);
+    // TODO: Backend needs GET /api/patients endpoint
+    // Using demo patients with prescriptions
+    const demoPatients: Patient[] = [
+      {
+        id: "demoP001",
+        name: "Alex Johnson",
+        prescriptions: [
+          {
+            medicines: [
+              { name: "Ibuprofen", quantity: 20, status: false },
+              { name: "Vitamin D", quantity: 30, status: true }
+            ],
+            bloodBottles: 0,
+            bloodGroup: "O+",
+            date: new Date()
+          }
+        ]
+      },
+      {
+        id: "demoP002",
+        name: "Maria Garcia",
+        prescriptions: [
+          {
+            medicines: [
+              { name: "Insulin", quantity: 5, status: false },
+              { name: "Metformin", quantity: 30, status: true }
+            ],
+            bloodBottles: 1,
+            bloodGroup: "B-",
+            date: new Date()
+          }
+        ]
       }
-    };
-    fetchData();
+    ];
+    setPatients(demoPatients);
   }, []);
 
   const addMedicine = () => {
@@ -158,40 +108,14 @@ export default function Prescription() {
   const handleSubmit = async () => {
     if (!selectedPatient || medicines.length === 0 || !bloodGroup) return;
 
-    const selectedPatientData = patients.find(p => p.id === selectedPatient);
-    if (!selectedPatientData) return;
-
-    const newPrescription: Prescription = {
-      medicines,
-      bloodBottles: parseInt(bloodBottles) || 0,
-      bloodGroup,
-      date: new Date(),
-    };
-
-    try {
-      const updatedPrescriptions = [
-        ...(selectedPatientData.prescriptions || []),
-        newPrescription
-      ];
-
-      await updateDocument('patient', selectedPatient, {
-        prescriptions: updatedPrescriptions
-      });
-
-      setPatients(prev =>
-        prev.map(p =>
-          p.id === selectedPatient ? { ...p, prescriptions: updatedPrescriptions } : p
-        )
-      );
-
-      setSelectedPatient('');
-      setMedicines([]);
-      setBloodBottles('');
-      setBloodGroup('');
-      setIsDialogOpen(false);
-    } catch (error) {
-      console.error('Error updating patient with new prescription:', error);
-    }
+    // TODO: Use prescriptionService.create() when backend is ready
+    alert('Note: Backend integration pending. This would create a prescription.');
+    
+    setSelectedPatient('');
+    setMedicines([]);
+    setBloodBottles('');
+    setBloodGroup('');
+    setIsDialogOpen(false);
   };
 
   return (

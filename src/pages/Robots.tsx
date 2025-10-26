@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/components/ui/use-toast";
 import { Ambulance, Shield, Navigation, Package } from "lucide-react";
 import { RobotData } from "@/lib/types";
-import { subscribeToRobotData } from "@/lib/realtimeDb";
+import { subscribeToRobotData } from "@/lib/websocket";
 import { ObstacleDisplay } from "@/components/robots/ObstacleDisplay";
 import { RobotStatus } from "@/components/robots/RobotStatus";
 

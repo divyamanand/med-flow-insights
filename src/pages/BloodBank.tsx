@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { getCollection } from "@/lib/firestore";
 import {
   BloodInventory,
   DonationStat,
@@ -44,38 +43,13 @@ export default function BloodBank() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-
-        const [
-          
-          donationStatsData,
-          donorAgeDataRaw,
-          monthlyDonationsData,
-          bloodRequestsData,
-        ] = await Promise.all([
-          
-          getCollection("donation_states"),
-          getCollection("donarAgeData"),
-          getCollection("monthlyDonations"),
-          getCollection("bloodRequests"),
-        ]);
-
-        setDonationStats(donationStatsData as DonationStat[]);
-        setDonorAgeData(donorAgeDataRaw as DonorAgeGroup[]);
-        setMonthlyDonations(monthlyDonationsData as MonthlyDonation[]);
-        setBloodRequests(bloodRequestsData as BloodRequest[]);
-        setError(null);
-      } catch (err: any) {
-        setError("Failed to fetch data from Firestore.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    // TODO: Backend needs blood bank endpoints
+    // Using demo data
+    setDonationStats([]);
+    setDonorAgeData([]);
+    setMonthlyDonations([]);
+    setBloodRequests([]);
+    setLoading(false);
   }, []);
 
   const criticalBloodTypes = Object.entries(bloodInventory)

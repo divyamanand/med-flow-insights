@@ -1,11 +1,9 @@
-
 import React from 'react'
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { differenceInDays } from "date-fns"
-import { getCollection } from '@/lib/firestore'
 import { Medicine, MedicineBatch } from '@/lib/types'
-import { toCompatibleDate } from '@/lib/utils' // Import the utility function
+import { toCompatibleDate } from '@/lib/utils'
 
 const MedicinesPage = () => {
 
@@ -14,19 +12,36 @@ const MedicinesPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchMedicines = async () => {
-      try {
-        const medicinesData : Medicine[] = await getCollection("medicine") as Medicine[]
-        setMedicines(medicinesData);
-      } catch (err) {
-        setError("Failed to fetch medicines");
-        console.error(err);
-      } finally {
-        setLoading(false);
+    // TODO: Backend needs GET /api/medicines endpoint
+    // Using demo data for now
+    const demoMedicines: Medicine[] = [
+      {
+        id: '1',
+        name: 'Paracetamol',
+        batches: [
+          {
+            batchNo: 'B001',
+            manufacturer: 'PharmaCo',
+            quantity: 500,
+            expirationDate: new Date('2025-12-31'),
+          }
+        ]
+      },
+      {
+        id: '2',
+        name: 'Amoxicillin',
+        batches: [
+          {
+            batchNo: 'B002',
+            manufacturer: 'MediCorp',
+            quantity: 200,
+            expirationDate: new Date('2024-11-15'),
+          }
+        ]
       }
-    };
-
-    fetchMedicines();
+    ];
+    setMedicines(demoMedicines);
+    setLoading(false);
   }, []);
 
   // Function to determine batch status
@@ -77,7 +92,7 @@ const MedicinesPage = () => {
     return <div className="flex h-screen w-full items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
-          <p className="text-lg font-medium">Connecting to Firebase...</p>
+          <p className="text-lg font-medium">Loading medicines...</p>
         </div>
       </div>
   }
