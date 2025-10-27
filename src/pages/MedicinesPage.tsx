@@ -20,7 +20,8 @@ const MedicinesPage = () => {
         name: 'Paracetamol',
         batches: [
           {
-            batchNo: 'B001',
+            id: '1',
+            batchNumber: 'B001',
             manufacturer: 'PharmaCo',
             quantity: 500,
             expirationDate: new Date('2025-12-31'),
@@ -32,7 +33,8 @@ const MedicinesPage = () => {
         name: 'Amoxicillin',
         batches: [
           {
-            batchNo: 'B002',
+            id: '2',
+            batchNumber: 'B002',
             manufacturer: 'MediCorp',
             quantity: 200,
             expirationDate: new Date('2024-11-15'),

@@ -35,9 +35,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Define types at the top level
 
-
-const getDate = (date: Timestamp | Date): Date => {
-  return date instanceof Timestamp ? date.toDate() : date;
+const getDate = (date: Date): Date => {
+  return date instanceof Date ? date : new Date(date);
 };
 
 export default function Supplies() {
@@ -57,7 +56,7 @@ export default function Supplies() {
     setLoading(false);
   }, []);
 
-  const checkIfExpired = (date: Timestamp | Date | undefined): boolean => {
+  const checkIfExpired = (date: Date | undefined): boolean => {
     if (!date) return true;
     const expiryDate = getDate(date);
     return expiryDate < new Date();

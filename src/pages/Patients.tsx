@@ -51,7 +51,9 @@ export default function Patients() {
         type: 'Regular',
         date: new Date(),
         doctor: 'Dr. Sarah Johnson',
-        issues: ['Fever', 'Cough']
+        issues: ['Fever', 'Cough'],
+        staff: [],
+        medicines: []
       },
       {
         id: '2',
@@ -60,7 +62,9 @@ export default function Patients() {
         type: 'Emergency',
         date: new Date(),
         doctor: 'Dr. Michael Brown',
-        issues: ['Fracture']
+        issues: ['Fracture'],
+        staff: [],
+        medicines: []
       }
     ];
     setPatients(demoPatients);
