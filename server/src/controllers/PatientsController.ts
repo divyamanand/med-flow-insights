@@ -11,17 +11,6 @@ export class PatientsController {
   private roomReqRepo = new RoomStaffRequirementRepository();
   private apptService = new AppointmentService();
 
-  list = async (_req: Request, res: Response) => {
-    const data = await this.service.listPatients();
-    res.json(ok(data));
-  };
-
-  getById = async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const data = await this.service.getPatientById(id);
-    res.json(ok(data));
-  };
-
   create = async (req: Request, res: Response) => {
     const dto = (req as any).dto as any;
     const data = await this.service.createPatient(dto);

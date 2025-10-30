@@ -8,7 +8,6 @@ import { Roles } from '../utils/roles';
 const router = Router();
 const ctrl = new PrescriptionsController();
 
-router.get('/', ctrl.list);
 router.post('/', requireRoles(Roles.Doctor, Roles.Admin), validateBody(CreatePrescriptionDto), ctrl.create);
 
 export default router;

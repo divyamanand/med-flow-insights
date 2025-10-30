@@ -8,7 +8,6 @@ import { Roles } from '../utils/roles';
 const router = Router();
 const ctrl = new InventoryController();
 
-router.get('/items', ctrl.listItems);
 router.post('/items', requireRoles(Roles.Admin, Roles.Pharmacist), validateBody(AddInventoryItemDto), ctrl.addItem);
 router.post('/sell', requireRoles(Roles.Admin, Roles.Pharmacist), validateBody(SellInventoryDto), ctrl.sell);
 router.post('/stock', requireRoles(Roles.Admin, Roles.Pharmacist), validateBody(AddInventoryStockDto), ctrl.addStock);

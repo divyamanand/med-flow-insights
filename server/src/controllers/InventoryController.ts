@@ -5,11 +5,6 @@ import { ok } from '../utils/response';
 export class InventoryController {
   private service = new InventoryService();
 
-  listItems = async (_req: Request, res: Response) => {
-    const data = await this.service.listItems();
-    res.json(ok(data));
-  };
-
   addItem = async (req: Request, res: Response) => {
     const dto = (req as any).dto as any;
     const data = await this.service.addItem(dto);

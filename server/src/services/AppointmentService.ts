@@ -11,10 +11,6 @@ export class AppointmentService {
   private strategy: IDoctorAppointmentStrategy = StrategyRegistry.doctorAppointment;
   private issueService = new IssueService();
 
-  async listAppointments() {
-    return this.apptRepo.find();
-  }
-
   async getRequiredSpecialitiesForIssues(issues: string[]): Promise<string[]> {
     return this.issueService.getRequiredSpecialitiesForIssues(issues);
   }

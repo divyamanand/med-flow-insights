@@ -8,8 +8,6 @@ import { Roles } from '../utils/roles';
 const router = Router();
 const ctrl = new StaffController();
 
-router.get('/', ctrl.listStaff);
-router.get('/:id', ctrl.getStaffById);
 router.post('/', requireRoles(Roles.Admin), validateBody(CreateStaffDto), ctrl.createStaff);
 router.post('/doctors', requireRoles(Roles.Admin), validateBody(CreateDoctorDto), ctrl.createDoctor);
 router.post('/timings', requireRoles(Roles.Admin), validateBody(AddTimingDto), ctrl.addTiming);

@@ -17,5 +17,6 @@ router.post('/login', validateBody(LoginDto), controller.login);
 
 // Public when no users exist; Admin-only otherwise (enforced in controller)
 router.post('/register', validateBody(CreateStaffDto), controller.register);
+router.post('/logout', requireAuth, controller.logout);
 
 export default router;

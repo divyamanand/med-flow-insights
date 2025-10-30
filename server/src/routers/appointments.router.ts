@@ -8,7 +8,6 @@ import { Roles } from '../utils/roles';
 const router = Router();
 const ctrl = new AppointmentsController();
 
-router.get('/', ctrl.list);
 router.post('/', requireRoles(Roles.Admin, Roles.Receptionist), validateBody(CreateAppointmentDto), ctrl.create);
 
 export default router;

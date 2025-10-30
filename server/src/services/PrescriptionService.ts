@@ -7,10 +7,6 @@ export class PrescriptionService {
   private patientRepo = new PatientRepository();
   private doctorRepo = new DoctorRepository();
 
-  async listPrescriptions() {
-    return this.repo.find();
-  }
-
   async createPrescription(input: {
     patientId: string; doctorId: string; items: Record<string, number>; tests: string[]; nextVisitDateDays?: number; remarks?: string | null;
   }) {
