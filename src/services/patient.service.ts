@@ -21,6 +21,16 @@ export interface AdmitPatientDto {
 }
 
 export const patientService = {
+  list: async () => {
+    const response = await api.get('/patients');
+    return response.data;
+  },
+
+  getById: async (id: string) => {
+    const response = await api.get(`/patients/${id}`);
+    return response.data;
+  },
+
   create: async (data: CreatePatientDto) => {
     const response = await api.post('/patients', data);
     return response.data;
@@ -36,10 +46,8 @@ export const patientService = {
     return response.data;
   },
 
-  // Fallback: Since backend doesn't have GET endpoints, we'll use POST to create
-  // In a real scenario, you'd add GET endpoints to the backend
-  getAll: async () => {
-    // This will need to be implemented in backend as GET /patients
-    throw new Error('GET /patients endpoint not implemented in backend yet');
+  discharge: async (patientId: string) => {
+    const response = await api.post('/patients/discharge', { patientId });
+    return response.data;
   },
 };

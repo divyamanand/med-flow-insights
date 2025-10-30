@@ -5,6 +5,17 @@ import { ok } from '../utils/response';
 export class StaffController {
   private service = new StaffService();
 
+  listStaff = async (_req: Request, res: Response) => {
+    const data = await this.service.listStaff();
+    res.json(ok(data));
+  };
+
+  getStaffById = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const data = await this.service.getStaffById(id);
+    res.json(ok(data));
+  };
+
   createStaff = async (req: Request, res: Response) => {
     const dto = (req as any).dto as any;
     const data = await this.service.createStaff(dto);

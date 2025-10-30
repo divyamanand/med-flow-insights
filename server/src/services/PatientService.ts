@@ -8,6 +8,16 @@ export class PatientService {
   private roomService = new RoomService();
   private hash(pw: string) { return createHash('sha256').update(pw).digest('hex'); }
 
+  async listPatients() {
+    return this.patientRepo.find();
+  }
+
+  async getPatientById(id: string) {
+    const patient = await this.patientRepo.findById(id);
+    if (!patient) throw new Error('Patient not found');
+    return patient;
+  }
+
   async createPatient(input: {
     firstName: string; lastName: string; dob: string; gender: string; email: string; contact: string; bloodGroup?: string; password: string;
   }) {

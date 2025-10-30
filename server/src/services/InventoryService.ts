@@ -11,6 +11,10 @@ export class InventoryService {
   private factory: IInventoryItemFactory = FactoryRegistry.inventory;
   private selling: ISellingStrategy = StrategyRegistry.inventorySelling;
 
+  async listItems() {
+    return this.itemRepo.find();
+  }
+
   async addItem(input: { kind: 'medicine' | 'blood' | 'equipment'; name?: string; manufacturer?: string; bloodGroup?: string; quantity: number; }) {
     const item = this.factory.createItem(input.kind, { name: input.name, manufacturer: input.manufacturer, bloodGroup: input.bloodGroup });
     const saved = await this.itemRepo.save(item as any);

@@ -25,6 +25,16 @@ export class StaffService {
     return bcrypt.hash(pw, salt);
   }
 
+  async listStaff() {
+    return this.staffRepo.find();
+  }
+
+  async getStaffById(id: string) {
+    const staff = await this.staffRepo.findById(id);
+    if (!staff) throw new Error('Staff not found');
+    return staff;
+  }
+
   async createStaff(input: {
     firstName: string; lastName: string; dob: string; gender: string; email: string; contact: string; bloodGroup?: string; role: string; password: string;
   }) {

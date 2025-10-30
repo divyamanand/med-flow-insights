@@ -29,6 +29,16 @@ export interface RequestLeaveDto {
 }
 
 export const staffService = {
+  list: async () => {
+    const response = await api.get('/staff');
+    return response.data;
+  },
+
+  getById: async (id: string) => {
+    const response = await api.get(`/staff/${id}`);
+    return response.data;
+  },
+
   createStaff: async (data: CreateStaffDto) => {
     const response = await api.post('/staff', data);
     return response.data;

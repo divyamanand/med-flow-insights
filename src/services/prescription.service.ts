@@ -10,6 +10,11 @@ export interface CreatePrescriptionDto {
 }
 
 export const prescriptionService = {
+  list: async () => {
+    const response = await api.get('/prescriptions');
+    return response.data;
+  },
+
   create: async (data: CreatePrescriptionDto) => {
     const response = await api.post('/prescriptions', data);
     return response.data;

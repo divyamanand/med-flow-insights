@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Patient } from '@/lib/types';
 import { getPatientDate } from '@/lib/utils';
+import { patientService } from '@/services/patient.service';
 import {
   Card,
   CardContent,
@@ -41,34 +42,19 @@ export default function Patients() {
   const [filterType, setFilterType] = useState<string | null>(null);
 
   useEffect(() => {
-    // TODO: Backend needs GET /api/patients endpoint
-    // For now using demo data
-    const demoPatients: Patient[] = [
-      {
-        id: '1',
-        name: 'John Smith',
-        ipd_no: 'IPD001',
-        type: 'Regular',
-        date: new Date(),
-        doctor: 'Dr. Sarah Johnson',
-        issues: ['Fever', 'Cough'],
-        staff: [],
-        medicines: []
-      },
-      {
-        id: '2',
-        name: 'Emma Wilson',
-        ipd_no: 'IPD002',
-        type: 'Emergency',
-        date: new Date(),
-        doctor: 'Dr. Michael Brown',
-        issues: ['Fracture'],
-        staff: [],
-        medicines: []
+    const fetchPatients = async () => {
+      try {
+        setLoading(true);
+        const data = await patientService.list();
+        setPatients(data.data || []);
+      } catch (err: any) {
+        setError(err.message || 'Failed to fetch patients');
+      } finally {
+        setLoading(false);
       }
-    ];
-    setPatients(demoPatients);
-    setLoading(false);
+    };
+
+    fetchPatients();
   }, []);
 
   const filteredPatients: Patient[] = (patients || []).filter((patient) => {
