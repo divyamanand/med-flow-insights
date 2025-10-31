@@ -1,4 +1,3 @@
-
 import { cn } from "@/lib/utils";
 import {
   Sidebar,
@@ -27,9 +26,11 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function AppSidebar() {
   const location = useLocation();
+  const { user, logout } = useAuth();
   
   const navItems = [
     {
@@ -117,16 +118,24 @@ export function AppSidebar() {
           <div className="flex items-center gap-3">
             <Avatar>
               <AvatarImage src="/placeholder.svg" />
-              <AvatarFallback>DR</AvatarFallback>
+              <AvatarFallback>
+                {user?.name
+                  ?.split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .toUpperCase() || 'U'}
+              </AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-sm font-medium">Dr. Sarah Johnson</p>
-              <p className="text-xs text-muted-foreground">Admin</p>
+              <p className="text-sm font-medium">{user?.name || 'User'}</p>
+              <p className="text-xs text-muted-foreground capitalize">{user?.role || 'Staff'}</p>
             </div>
           </div>
           <button
             type="button"
+            onClick={logout}
             className="rounded-full p-1.5 text-muted-foreground hover:bg-muted"
+            aria-label="Logout"
           >
             <LogOut className="h-4 w-4" />
           </button>
