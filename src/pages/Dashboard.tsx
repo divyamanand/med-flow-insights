@@ -1,4 +1,4 @@
-
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { PatientStatusChart } from "@/components/dashboard/PatientStatusChart";
@@ -7,45 +7,127 @@ import { RecentPatients } from "@/components/dashboard/RecentPatients";
 import { RobotStatusCard } from "@/components/dashboard/RobotStatusCard";
 import { InventoryExpiryChart } from "@/components/dashboard/InventoryExpiryChart";
 import { Bed, Heart, Hospital, User, Users } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { dashboardService } from "@/services/dashboard.service";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [user]);
+
+  const fetchDashboardData = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      let data;
+      
+      switch (user.role.toLowerCase()) {
+        case 'admin':
+          data = await dashboardService.adminView();
+          break;
+        case 'receptionist':
+          data = await dashboardService.receptionView();
+          break;
+        case 'doctor':
+          data = await dashboardService.doctorView(user.id.toString());
+          break;
+        default:
+          data = await dashboardService.receptionView();
+      }
+      
+      setDashboardData(data.data || data);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to fetch dashboard data',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent mx-auto"></div>
+          <p className="mt-4 text-lg font-medium">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Hospital overview and key metrics</p>
+        <p className="text-muted-foreground">
+          {user?.role === 'admin' && 'System overview and management'}
+          {user?.role === 'receptionist' && 'Reception desk overview'}
+          {user?.role === 'doctor' && 'Your schedule and patients'}
+        </p>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Patients"
-          value="1,284"
-          icon={User}
-          description="Active patients in system"
-          trend={{ value: 12, isPositive: true }}
-        />
-        <StatCard
-          title="Available Doctors"
-          value="32"
-          icon={Users}
-          description="On duty today"
-          trend={{ value: 4, isPositive: true }}
-        />
-        <StatCard
-          title="Occupied Beds"
-          value="142/180"
-          icon={Bed}
-          description="Current occupancy"
-          trend={{ value: 7, isPositive: false }}
-        />
-        <StatCard
-          title="Blood Units"
-          value="328"
-          icon={Heart}
-          description="Available in inventory"
-          trend={{ value: 3, isPositive: true }}
-        />
-      </div>
+      {/* Role-based stats */}
+      {user?.role === 'admin' && dashboardData && (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <StatCard
+            title="Total Rooms"
+            value={dashboardData.rooms?.toString() || '0'}
+            icon={Bed}
+            description="Hospital rooms"
+          />
+          <StatCard
+            title="Doctors"
+            value={dashboardData.doctors?.toString() || '0'}
+            icon={Users}
+            description="Active doctors"
+          />
+          <StatCard
+            title="Staff Members"
+            value={dashboardData.staff?.toString() || '0'}
+            icon={User}
+            description="Total staff"
+          />
+        </div>
+      )}
+
+      {user?.role === 'receptionist' && dashboardData && (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Admitted Patients"
+            value={dashboardData.admittedCount?.toString() || '0'}
+            icon={User}
+            description="Currently admitted"
+          />
+          <StatCard
+            title="Available Doctors"
+            value={dashboardData.doctorsCount?.toString() || '0'}
+            icon={Users}
+            description="On duty"
+          />
+          <StatCard
+            title="Staff Members"
+            value={dashboardData.staffCount?.toString() || '0'}
+            icon={Users}
+            description="Total staff"
+          />
+          <StatCard
+            title="Room Status"
+            value={Object.keys(dashboardData.roomsSummary || {}).length.toString()}
+            icon={Hospital}
+            description="Room types"
+          />
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <PatientStatusChart />

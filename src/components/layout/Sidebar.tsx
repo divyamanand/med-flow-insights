@@ -49,6 +49,21 @@ export function AppSidebar() {
       icon: Users,
     },
     {
+      title: "Staff",
+      path: "/staff",
+      icon: Users,
+    },
+    {
+      title: "Rooms",
+      path: "/rooms",
+      icon: Home,
+    },
+    {
+      title: "Appointments",
+      path: "/appointments",
+      icon: Hospital,
+    },
+    {
       title: "Supplies",
       path: "/supplies",
       icon: Home,

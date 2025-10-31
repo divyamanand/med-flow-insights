@@ -67,4 +67,34 @@ export const roomService = {
     const response = await api.post('/rooms/requirements/equipment', data);
     return response.data;
   },
+
+  vacate: async (id: string) => {
+    const response = await api.post(`/rooms/${id}/vacate`);
+    return response.data;
+  },
+
+  statusSummary: async () => {
+    const response = await api.get('/rooms/status/summary');
+    return response.data;
+  },
+
+  staffAllocations: async (id: string) => {
+    const response = await api.get(`/rooms/${id}/allocations/staff`);
+    return response.data;
+  },
+
+  equipmentAllocations: async (id: string) => {
+    const response = await api.get(`/rooms/${id}/allocations/equipment`);
+    return response.data;
+  },
+
+  occupancy: async () => {
+    const response = await api.get('/rooms/occupancy');
+    return response.data;
+  },
+
+  getById: async (id: string) => {
+    const response = await api.get(`/rooms/${id}`);
+    return response.data;
+  },
 };

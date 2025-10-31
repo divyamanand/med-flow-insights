@@ -10,6 +10,9 @@ import { Layout } from "./components/layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Patients from "./pages/Patients";
 import Doctors from "./pages/Doctors";
+import Staff from "./pages/Staff";
+import Rooms from "./pages/Rooms";
+import Appointments from "./pages/Appointments";
 import Supplies from "./pages/Supplies";
 import BloodBank from "./pages/BloodBank";
 import Robots from "./pages/Robots";
@@ -41,6 +44,9 @@ const App = () => (
               <Route index element={<Dashboard />} />
               <Route path="patients" element={<Patients />} />
               <Route path="doctors" element={<Doctors />} />
+              <Route path="staff" element={<Staff />} />
+              <Route path="rooms" element={<Rooms />} />
+              <Route path="appointments" element={<Appointments />} />
               <Route path="supplies" element={<Supplies />} />
               <Route path="blood-bank" element={<BloodBank />} />
               <Route path="robots" element={<Robots />} />
