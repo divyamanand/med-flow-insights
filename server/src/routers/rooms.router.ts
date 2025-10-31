@@ -17,4 +17,10 @@ router.post('/requirements/staff', requireRoles(Roles.Admin), validateBody(AddRo
 router.post('/requirements/equipment', requireRoles(Roles.Admin), validateBody(AddRoomEquipmentRequirementDto), ctrl.addEquipmentRequirement);
 router.post('/:id/vacate', requireRoles(Roles.Admin), ctrl.vacate);
 
+// GET routes
+router.get('/status/summary', requireRoles(Roles.Admin, Roles.Receptionist), ctrl.statusSummary);
+router.get('/:id/allocations/staff', requireRoles(Roles.Admin, Roles.Receptionist), ctrl.allocationsStaff);
+router.get('/:id/allocations/equipment', requireRoles(Roles.Admin, Roles.Receptionist), ctrl.allocationsEquipment);
+router.get('/occupancy', requireRoles(Roles.Admin, Roles.Receptionist), ctrl.occupancy);
+
 export default router;

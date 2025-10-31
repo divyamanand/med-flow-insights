@@ -14,4 +14,12 @@ router.post('/timings', requireRoles(Roles.Admin), validateBody(AddTimingDto), c
 router.post('/leaves', validateBody(RequestLeaveDto), ctrl.requestLeave);
 router.get('/doctors', ctrl.listDoctors);
 
+// GET routes
+router.get('/', requireRoles(Roles.Admin), ctrl.list);
+router.get('/:id', requireRoles(Roles.Admin), ctrl.getStaff);
+router.get('/doctors/:id', requireRoles(Roles.Admin, Roles.Receptionist), ctrl.getDoctor);
+router.get('/:id/timings', requireRoles(Roles.Admin, Roles.Receptionist), ctrl.timings);
+router.get('/:id/leaves', requireRoles(Roles.Admin), ctrl.leaves);
+router.get('/doctors/:id/appointments', requireRoles(Roles.Admin, Roles.Receptionist), ctrl.doctorAppointments);
+
 export default router;

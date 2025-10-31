@@ -9,5 +9,6 @@ const router = Router();
 const ctrl = new AppointmentsController();
 
 router.post('/', requireRoles(Roles.Admin, Roles.Receptionist), validateBody(CreateAppointmentDto), ctrl.create);
+router.get('/', requireRoles(Roles.Admin, Roles.Receptionist, Roles.Doctor), ctrl.list);
 
 export default router;

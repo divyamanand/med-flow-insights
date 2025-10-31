@@ -14,9 +14,8 @@ const controller = new AuthController();
 const router = Router();
 
 router.post('/login', validateBody(LoginDto), controller.login);
-
-// Public when no users exist; Admin-only otherwise (enforced in controller)
 router.post('/register', validateBody(CreateStaffDto), controller.register);
 router.post('/logout', requireAuth, controller.logout);
+router.get('/me', requireAuth, controller.me);
 
 export default router;

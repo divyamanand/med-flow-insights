@@ -16,4 +16,12 @@ router.post('/equipment/release', requireRoles(Roles.Admin), validateBody(Releas
 router.post('/equipment/process-requirements', requireRoles(Roles.Admin), ctrl.processEquipmentRequirements);
 router.post('/equipment/request', requireRoles(Roles.Admin, Roles.Receptionist), validateBody(RequestEquipmentDto), ctrl.requestEquipment);
 
+// GET routes
+router.get('/items', requireRoles(Roles.Admin, Roles.Pharmacist), ctrl.listItems);
+router.get('/items/:id', requireRoles(Roles.Admin, Roles.Pharmacist), ctrl.getItem);
+router.get('/items/:id/stocks', requireRoles(Roles.Admin, Roles.Pharmacist), ctrl.stocks);
+router.get('/equipment/requirements', requireRoles(Roles.Admin, Roles.Receptionist), ctrl.equipmentRequirements);
+router.get('/equipment/allotments/active', requireRoles(Roles.Admin, Roles.Receptionist), ctrl.activeEquipmentAllotments);
+router.get('/availability', requireRoles(Roles.Admin, Roles.Pharmacist), ctrl.availability);
+
 export default router;

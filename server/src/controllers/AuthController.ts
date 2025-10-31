@@ -33,6 +33,14 @@ export class AuthController {
     return res.json({ user: (result as any).user });
   };
 
+  me = async (req: Request, res: Response) => {
+    const user = (req as any).user as { id: string };
+    const staff = await this.staffRepo.findById(user.id);
+    if (!staff) return res.status(404).json({ error: 'Not found' });
+    const { passwordHash, ...safe } = staff as any;
+    res.json({ user: safe });
+  };
+
   // Registration rules:
   // - If no staff users exist yet, allow public registration (bootstrap) and default role from body (recommended Admin)
   // - If staff exists, require authenticated Admin to register new users

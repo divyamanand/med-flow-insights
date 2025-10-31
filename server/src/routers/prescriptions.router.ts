@@ -9,5 +9,6 @@ const router = Router();
 const ctrl = new PrescriptionsController();
 
 router.post('/', requireRoles(Roles.Doctor, Roles.Admin), validateBody(CreatePrescriptionDto), ctrl.create);
+router.get('/', requireRoles(Roles.Doctor, Roles.Admin, Roles.Receptionist), ctrl.list);
 
 export default router;
