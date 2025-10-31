@@ -18,4 +18,7 @@ router.post('/register', validateBody(CreateStaffDto), controller.register);
 router.post('/logout', requireAuth, controller.logout);
 router.get('/me', requireAuth, controller.me);
 
+// Get current authenticated user
+router.get('/me', requireAuth, controller.me);
+
 export default router;

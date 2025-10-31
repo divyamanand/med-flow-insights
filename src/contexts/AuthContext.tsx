@@ -31,44 +31,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in on mount
-    const token = localStorage.getItem('auth_token');
-    const savedUser = localStorage.getItem('user');
-    
-    if (token && savedUser) {
+    // Check if user is logged in by verifying session with server
+    const checkAuth = async () => {
       try {
-        setUser(JSON.parse(savedUser));
+        // Try to get current user from a protected endpoint
+        const response = await api.get('/auth/me');
+        setUser(response.data.user);
       } catch (error) {
-        console.error('Failed to parse user data:', error);
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user');
+        // Not authenticated or session expired
+        setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+    
+    checkAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
     const response = await api.post('/auth/login', { email, password });
-    const { token, user: userData } = response.data;
-    
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
+    const { user: userData } = response.data;
     setUser(userData);
   };
 
   const register = async (data: RegisterData) => {
     const response = await api.post('/auth/register', data);
-    const { token, user: userData } = response.data;
-    
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
+    const { user: userData } = response.data;
     setUser(userData);
   };
 
-  const logout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user');
-    setUser(null);
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+      window.location.href = '/auth';
+    }
   };
 
   return (
