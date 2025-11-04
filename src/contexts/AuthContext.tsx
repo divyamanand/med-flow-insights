@@ -40,6 +40,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         // Not authenticated or session expired
         setUser(null);
+        // Redirect to auth if on protected route
+        const publicRoutes = ['/auth', '/'];
+        if (!publicRoutes.includes(window.location.pathname)) {
+          window.location.href = '/auth';
+        }
       } finally {
         setIsLoading(false);
       }
@@ -52,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await api.post('/auth/login', { email, password });
     const { user: userData } = response.data;
     setUser(userData);
+    window.location.href = '/app';
   };
 
   const register = async (data: RegisterData) => {

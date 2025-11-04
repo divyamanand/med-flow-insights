@@ -36,42 +36,42 @@ export function AppSidebar() {
   const navItems = [
     {
       title: "Dashboard",
-      path: "/",
+      path: "/app",
       icon: LayoutDashboard,
     },
     {
       title: "Patients",
-      path: "/patients",
+      path: "/app/patients",
       icon: User,
     },
     {
       title: "Doctors",
-      path: "/doctors",
+      path: "/app/doctors",
       icon: Users,
     },
     {
       title: "Staff",
-      path: "/staff",
+      path: "/app/staff",
       icon: Briefcase,
     },
     {
       title: "Rooms",
-      path: "/rooms",
+      path: "/app/rooms",
       icon: Home,
     },
     {
       title: "Appointments",
-      path: "/appointments",
+      path: "/app/appointments",
       icon: Calendar,
     },
     {
       title: "Inventory",
-      path: "/inventory",
+      path: "/app/inventory",
       icon: Package,
     },
     {
       title: "Prescriptions",
-      path: "/prescription",
+      path: "/app/prescription",
       icon: FileText,
     }
   ];
