@@ -14,15 +14,16 @@ import {
 } from "@/components/ui/sidebar";
 import {
   BookOpen,
-  Heart,
   Home,
   Hospital,
   LayoutDashboard,
   LogOut,
   User,
   Users,
-  BriefcaseMedical,
-  Activity,
+  Package,
+  FileText,
+  Calendar,
+  Briefcase,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -51,7 +52,7 @@ export function AppSidebar() {
     {
       title: "Staff",
       path: "/staff",
-      icon: Users,
+      icon: Briefcase,
     },
     {
       title: "Rooms",
@@ -61,37 +62,17 @@ export function AppSidebar() {
     {
       title: "Appointments",
       path: "/appointments",
-      icon: Hospital,
+      icon: Calendar,
     },
     {
-      title: "Supplies",
-      path: "/supplies",
-      icon: Home,
+      title: "Inventory",
+      path: "/inventory",
+      icon: Package,
     },
     {
-      title: "Blood Bank",
-      path: "/blood-bank",
-      icon: Heart,
-    },
-    {
-      title: "Robots",
-      path: "/robots",
-      icon: Hospital,
-    },
-    {
-      title: "Medicines",
-      path: "/medicines",
-      icon: BriefcaseMedical
-    },
-    {
-      title: "Prescription",
+      title: "Prescriptions",
       path: "/prescription",
-      icon: Hospital
-    },
-    {
-      title: "Patient Monitoring",
-      path: "/rtpatientmonitoring",
-      icon: Activity
+      icon: FileText,
     }
   ];
 

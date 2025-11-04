@@ -3,6 +3,13 @@
 ## Overview
 The frontend is now fully integrated with all backend API routes with proper RBAC, pagination support, and comprehensive service layers.
 
+**Configuration:**
+- Backend: http://localhost:4000
+- Frontend: http://localhost:5173  
+- API: http://localhost:4000/api
+
+**Note:** Demo features without backend support (Robots, Real-time Monitoring, separate Blood Bank/Supplies pages) have been removed. All inventory is now unified under the Inventory page with filters for medicines, blood, and equipment.
+
 ## Architecture
 
 ### Service Layer (`src/services/`)

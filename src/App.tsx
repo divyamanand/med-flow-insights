@@ -13,13 +13,9 @@ import Doctors from "./pages/Doctors";
 import Staff from "./pages/Staff";
 import Rooms from "./pages/Rooms";
 import Appointments from "./pages/Appointments";
-import Supplies from "./pages/Supplies";
-import BloodBank from "./pages/BloodBank";
-import Robots from "./pages/Robots";
 import NotFound from "./pages/NotFound";
-import MedicinesPage from "./pages/MedicinesPage";
 import Prescription from "./pages/Prescription";
-import DashboardPage from "./components/patient_monitoring/PatientMonitoring";
+import InventoryPrediction from "./pages/InventoryPrediction";
 import Auth from "./pages/Auth";
 
 const queryClient = new QueryClient({
@@ -47,12 +43,8 @@ const App = () => (
               <Route path="staff" element={<Staff />} />
               <Route path="rooms" element={<Rooms />} />
               <Route path="appointments" element={<Appointments />} />
-              <Route path="supplies" element={<Supplies />} />
-              <Route path="blood-bank" element={<BloodBank />} />
-              <Route path="robots" element={<Robots />} />
-              <Route path="medicines" element={<MedicinesPage />} />
+              <Route path="inventory" element={<InventoryPrediction />} />
               <Route path="prescription" element={<Prescription />} />
-              <Route path="rtpatientmonitoring" element={<DashboardPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
