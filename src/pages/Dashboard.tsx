@@ -6,10 +6,12 @@ import { DoctorAvailabilityChart } from "@/components/dashboard/DoctorAvailabili
 import { RecentPatients } from "@/components/dashboard/RecentPatients";
 import { RobotStatusCard } from "@/components/dashboard/RobotStatusCard";
 import { InventoryExpiryChart } from "@/components/dashboard/InventoryExpiryChart";
-import { Bed, Heart, Hospital, User, Users } from "lucide-react";
+import { Bed, Hospital, User, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { dashboardService } from "@/services/dashboard.service";
 import { useToast } from "@/hooks/use-toast";
+import { PageHeader } from "@/shared/components/PageHeader";
+import { LoadingOverlay } from "@/shared/components/LoadingOverlay";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -55,26 +57,20 @@ export default function Dashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent mx-auto"></div>
-          <p className="mt-4 text-lg font-medium">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <LoadingOverlay label="Loading dashboard..." />;
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">
-          {user?.role === 'admin' && 'System overview and management'}
-          {user?.role === 'receptionist' && 'Reception desk overview'}
-          {user?.role === 'doctor' && 'Your schedule and patients'}
-        </p>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        description={
+          (user?.role === 'admin' && 'System overview and management') ||
+          (user?.role === 'receptionist' && 'Reception desk overview') ||
+          (user?.role === 'doctor' && 'Your schedule and patients') || undefined
+        }
+        breadcrumbs={[{ label: 'Home', href: '/app' }, { label: 'Dashboard' }]}
+      />
 
       {/* Role-based stats */}
       {user?.role === 'admin' && dashboardData && (

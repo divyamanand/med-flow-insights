@@ -2,22 +2,8 @@ import { useState, useEffect } from 'react';
 import { Patient } from '@/lib/types';
 import { getPatientDate } from '@/lib/utils';
 import { patientService } from '@/services/patient.service';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable, ColumnDef } from "@/shared/components/DataTable";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,10 +15,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Search, Filter, MoreHorizontal, Plus } from "lucide-react";
+import { MoreHorizontal, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { PageHeader } from "@/shared/components/PageHeader";
+import { ResourceToolbar } from "@/shared/components/ResourceToolbar";
+import { EmptyState } from "@/shared/components/EmptyState";
+import { LoadingOverlay } from "@/shared/components/LoadingOverlay";
 
 export default function Patients() {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -40,6 +30,52 @@ export default function Patients() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  
+  const columns: ColumnDef<Patient>[] = [
+    { id: 'name', header: 'Name', accessor: (p) => <span className="font-medium">{p.name}</span> },
+    { id: 'ipd', header: 'IPD No', accessor: (p) => p.ipd_no },
+    { id: 'type', header: 'Type', cell: (p) => (
+      <Badge
+        variant="outline"
+        className={
+          p.type === 'Emergency'
+            ? 'border-red-200 bg-red-50 text-red-500'
+            : p.type === 'ICU'
+            ? 'border-amber-200 bg-amber-50 text-amber-500'
+            : p.type === 'Surgery'
+            ? 'border-blue-200 bg-blue-50 text-blue-500'
+            : 'border-green-200 bg-green-50 text-green-500'
+        }
+      >
+        {p.type}
+      </Badge>
+    ) },
+    { id: 'date', header: 'Date', accessor: (p) => (p.date ? format(getPatientDate(p), 'PP') : 'N/A') },
+    { id: 'doctor', header: 'Doctor', accessor: (p) => p.doctor },
+    { id: 'issues', header: 'Issues', cell: (p) => (
+      <div className="flex flex-wrap gap-1">
+        {p.issues?.map((issue) => (
+          <Badge key={issue} variant="secondary" className="text-xs">{issue}</Badge>
+        ))}
+      </div>
+    ) },
+    { id: 'actions', header: '', className: 'w-[64px]', cell: (p) => (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem>View Details</DropdownMenuItem>
+          <DropdownMenuItem>Edit Patient</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ) },
+  ];
 
   useEffect(() => {
     const fetchPatients = async () => {
@@ -75,12 +111,7 @@ export default function Patients() {
   });
 
   if (loading) {
-    return <div className="flex h-screen w-full items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
-          <p className="text-lg font-medium">Loading patients...</p>
-        </div>
-      </div>
+    return <LoadingOverlay label="Loading patients..." />
   }
 
   if (error) {
@@ -89,66 +120,54 @@ export default function Patients() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Patients</h1>
-          <p className="text-muted-foreground">Manage and view patient records</p>
-        </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Patient
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[525px]">
-            <DialogHeader>
-              <DialogTitle>Add New Patient</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Name
-                </Label>
-                <Input id="name" className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="ipd-no" className="text-right">
-                  IPD No
-                </Label>
-                <Input id="ipd-no" className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="type" className="text-right">
-                  Type
-                </Label>
-                <select id="type" className="col-span-3 border border-input rounded-md px-3 py-2">
-                  <option value="">Select type</option>
-                  <option value="Regular">Regular</option>
-                  <option value="Emergency">Emergency</option>
-                  <option value="Surgery">Surgery</option>
-                  <option value="ICU">ICU</option>
-                </select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="doctor" className="text-right">
-                  Doctor
-                </Label>
-                <Input id="doctor" className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="issues" className="text-right">
-                  Issues
-                </Label>
-                <Textarea id="issues" className="col-span-3" />
-              </div>
+      <PageHeader
+        title="Patients"
+        description="Manage and view patient records"
+        breadcrumbs={[{ label: 'Home', href: '/app' }, { label: 'Patients' }]}
+        actions={(
+          <Button onClick={() => setAddOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Add Patient
+          </Button>
+        )}
+      />
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogHeader>
+            <DialogTitle>Add New Patient</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">Name</Label>
+              <input id="name" className="col-span-3 border border-input rounded-md px-3 py-2 bg-background" />
             </div>
-            <DialogFooter>
-              <Button type="submit">Save</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="ipd-no" className="text-right">IPD No</Label>
+              <input id="ipd-no" className="col-span-3 border border-input rounded-md px-3 py-2 bg-background" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="type" className="text-right">Type</Label>
+              <select id="type" className="col-span-3 border border-input rounded-md px-3 py-2 bg-background">
+                <option value="">Select type</option>
+                <option value="Regular">Regular</option>
+                <option value="Emergency">Emergency</option>
+                <option value="Surgery">Surgery</option>
+                <option value="ICU">ICU</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="doctor" className="text-right">Doctor</Label>
+              <input id="doctor" className="col-span-3 border border-input rounded-md px-3 py-2 bg-background" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="issues" className="text-right">Issues</Label>
+              <Textarea id="issues" className="col-span-3" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit">Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader>
@@ -156,126 +175,27 @@ export default function Patients() {
           <CardDescription>Viewing all patients in the system</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search patients..."
-                className="pl-9"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  <Filter className="mr-2 h-4 w-4" />
-                  {filterType || "Filter"}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Filter by Type</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setFilterType(null)}>
-                  All
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterType("Emergency")}>
-                  Emergency
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterType("Regular")}>
-                  Regular
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterType("Surgery")}>
-                  Surgery
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterType("ICU")}>
-                  ICU
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>IPD No</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Doctor</TableHead>
-                  <TableHead>Issues</TableHead>
-                  <TableHead className="w-[80px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPatients.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center">
-                      No patients found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredPatients.map((patient) => (
-                    <TableRow key={patient.id}>
-                      <TableCell className="font-medium">{patient.name}</TableCell>
-                      <TableCell>{patient.ipd_no}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={
-                            patient.type === "Emergency"
-                              ? "border-red-200 bg-red-50 text-red-500"
-                              : patient.type === "ICU"
-                              ? "border-amber-200 bg-amber-50 text-amber-500"
-                              : patient.type === "Surgery"
-                              ? "border-blue-200 bg-blue-50 text-blue-500"
-                              : "border-green-200 bg-green-50 text-green-500"
-                          }
-                        >
-                          {patient.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {patient.date ? format(getPatientDate(patient), "PP") : "N/A"}
-                      </TableCell>
-                      <TableCell>{patient.doctor}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {patient.issues?.map((issue) => (
-                            <Badge key={issue} variant="secondary" className="text-xs">
-                              {issue}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 p-0"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit Patient</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <ResourceToolbar
+            search={{ value: searchTerm, onChange: setSearchTerm, placeholder: 'Search patients...' }}
+            filter={{
+              label: filterType ?? 'Filter',
+              value: filterType,
+              onChange: setFilterType,
+              options: [
+                { label: 'Emergency', value: 'Emergency' },
+                { label: 'Regular', value: 'Regular' },
+                { label: 'Surgery', value: 'Surgery' },
+                { label: 'ICU', value: 'ICU' },
+              ],
+            }}
+          />
+
+          <DataTable
+            columns={columns}
+            data={filteredPatients}
+            rowKey={(p) => p.id}
+            empty={<EmptyState title="No patients found" description="Try adjusting your search or filters." />}
+          />
         </CardContent>
       </Card>
     </div>
