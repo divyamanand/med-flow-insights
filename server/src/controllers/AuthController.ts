@@ -86,22 +86,4 @@ export class AuthController {
     res.clearCookie('token', { path: '/' });
     return res.json({ success: true });
   };
-
-  me = async (req: Request, res: Response) => {
-    const user = (req as any).user;
-    if (!user) throw new HttpError(401, 'Unauthorized');
-    
-    // Get full user details from database
-    const staff = await this.staffRepo.findById(user.id);
-    if (!staff) throw new HttpError(404, 'User not found');
-    
-    return res.json({
-      user: {
-        id: staff.id,
-        email: staff.email,
-        role: staff.role,
-        name: `${(staff as any).firstName} ${(staff as any).lastName}`,
-      },
-    });
-  };
 }

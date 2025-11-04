@@ -7,7 +7,9 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 8080,
+    // Use Vite's default dev port to match server CORS ALLOWED_ORIGINS
+    // The server allows http://localhost:5173 by default
+    port: 5173,
   },
   plugins: [
     react(),

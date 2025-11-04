@@ -14,10 +14,10 @@ export const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Redirect to auth page on unauthorized
-      window.location.href = '/auth';
-    }
+    // Let the app-level routing handle 401s to avoid reload loops
+    // Especially important because AuthProvider calls /auth/me on mount,
+    // and hard-redirecting here causes infinite refresh on /auth.
+    // Simply propagate the error so consumers (ProtectedRoute/AuthContext) can react.
     return Promise.reject(error);
   }
 );
