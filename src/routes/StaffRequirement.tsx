@@ -1,59 +1,126 @@
 import React, { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Link } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "@/lib/axios";
+
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from "@/components/ui/table";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Table,
+  TableHeader,
+  TableHead,
+  TableRow,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
-/* ---------------- Types ---------------- */
-type StaffReq = {
+/* ---------------- Types matching your backend ---------------- */
+type StaffRequirement = {
   id: string;
+  primaryUserId: string;
   roleNeeded: string;
-  count: number;
-  status: string;
-  creator: string;
+  quantity: number;
+  fulfilled?: number;
+  notes?: string;
+  status: "open" | "inProgress" | "fulfilled" | "cancelled";
+  createdAt: string;
 };
 
-/* ---------------- Mock data ---------------- */
-const MOCK_STAFF_REQS: StaffReq[] = [
-  { id: "REQ001", roleNeeded: "Nurse (ICU)", count: 2, status: "Open", creator: "Dr. Lee" },
-  { id: "REQ002", roleNeeded: "Physician Assistant", count: 2, status: "Open", creator: "Dr. Lee" },
-  { id: "REQ003", roleNeeded: "Anesthesiologist", count: 1, status: "Pending Approval", creator: "Dr. Sharma" },
-  { id: "REQ004", roleNeeded: "Medical Assistant", count: 3, status: "Open", creator: "Dr. Chen" },
-  { id: "REQ005", roleNeeded: "Radiology Technician", count: 1, status: "Open", creator: "Dr. Gupta" },
-  { id: "REQ006", roleNeeded: "Surgeon (Ortho)", count: 1, status: "Closed", creator: "Dr. Singh" },
+const ROLES = [
+  "nurse",
+  "labTech",
+  "doctor",
+  "surgeon",
+  "pharmacist",
+  "assistant",
 ];
 
-/* ---------------- Component ---------------- */
+/* ------------------------------------------------------------------ */
 export default function StaffingRequirements() {
-  const [roleFilter, setRoleFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("Open");
-  const [creatorSearch, setCreatorSearch] = useState<string>("");
+  const queryClient = useQueryClient();
 
-  // pagination
+  /* ---------------- Filters ---------------- */
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch] = useState("");
+
+  /* ---------------- Pagination ---------------- */
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  // query (mocked)
+  /* ---------------- Fetch requirements ---------------- */
   const q = useQuery({
     queryKey: ["staff-reqs"],
-    queryFn: async (): Promise<StaffReq[]> => {
-      await new Promise((r) => setTimeout(r, 150));
-      return MOCK_STAFF_REQS;
+    queryFn: async (): Promise<StaffRequirement[]> => {
+      const res = await api.get("/requirements/staff");
+      return res.data;
     },
-    staleTime: 30_000,
+    staleTime: 30000,
   });
 
+  /* ---------------- Mutations ---------------- */
+  const createReq = useMutation({
+    mutationFn: (body: {
+      primaryUserId: string;
+      roleNeeded: string;
+      quantity: number;
+      notes?: string;
+    }) => api.post("/requirements/staff", body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["staff-reqs"] }),
+  });
+
+  const updateReq = useMutation({
+    mutationFn: ({
+      id,
+      body,
+    }: {
+      id: string;
+      body: Partial<StaffRequirement>;
+    }) => api.patch(`/requirements/staff/${id}`, body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["staff-reqs"] }),
+  });
+
+  /* ---------------- Filtering ---------------- */
   const rows = useMemo(() => {
     let data = q.data ?? [];
-    if (roleFilter !== "all") data = data.filter((r) => r.roleNeeded === roleFilter);
-    if (statusFilter) data = data.filter((r) => r.status === statusFilter);
-    if (creatorSearch.trim()) data = data.filter((r) => r.creator.toLowerCase().includes(creatorSearch.trim().toLowerCase()));
-    return data;
-  }, [q.data, roleFilter, statusFilter, creatorSearch]);
 
+    if (roleFilter !== "all") data = data.filter((r) => r.roleNeeded === roleFilter);
+    if (statusFilter !== "all") data = data.filter((r) => r.status === statusFilter);
+
+    if (search.trim()) {
+      const t = search.trim().toLowerCase();
+      data = data.filter(
+        (r) =>
+          r.primaryUserId.toLowerCase().includes(t) ||
+          r.id.toLowerCase().includes(t)
+      );
+    }
+
+    return data;
+  }, [q.data, roleFilter, statusFilter, search]);
+
+  /* ---------------- Pagination ---------------- */
   const total = rows.length;
   const start = (page - 1) * pageSize;
   const end = Math.min(start + pageSize, total);
@@ -61,42 +128,88 @@ export default function StaffingRequirements() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* ---------------- Filters + Create Button ---------------- */}
       <Card>
         <CardHeader>
           <CardTitle>Staffing Requirements</CardTitle>
         </CardHeader>
+
         <CardContent>
           <div className="flex flex-wrap items-center gap-4">
+            {/* Role Filter */}
             <div className="min-w-[200px]">
-              <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(1); }}>
+              <Select
+                value={roleFilter}
+                onValueChange={(v) => {
+                  setRoleFilter(v);
+                  setPage(1);
+                }}
+              >
                 <SelectTrigger><SelectValue placeholder="Role Needed" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="Nurse (ICU)">Nurse (ICU)</SelectItem>
-                  <SelectItem value="Physician Assistant">Physician Assistant</SelectItem>
-                  <SelectItem value="Anesthesiologist">Anesthesiologist</SelectItem>
+                  {ROLES.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {role}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
+            {/* Status Filter */}
             <div className="min-w-[200px]">
-              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+              <Select
+                value={statusFilter}
+                onValueChange={(v) => {
+                  setStatusFilter(v);
+                  setPage(1);
+                }}
+              >
                 <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Open">Open</SelectItem>
-                  <SelectItem value="Pending Approval">Pending Approval</SelectItem>
-                  <SelectItem value="Closed">Closed</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="inProgress">In Progress</SelectItem>
+                  <SelectItem value="fulfilled">Fulfilled</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <Input placeholder="Creator name..." value={creatorSearch} onChange={(e) => { setCreatorSearch(e.target.value); setPage(1); }} />
+            {/* Search */}
+            <Input
+              placeholder="Search by ID or primaryUserId..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
 
-            <Button onClick={() => q.refetch()}>Apply Filters</Button>
+            {/* Create new requirement */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="ml-auto">+ New Request</Button>
+              </DialogTrigger>
+
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create Staff Requirement</DialogTitle>
+                </DialogHeader>
+
+                <CreateStaffForm onSubmit={createReq.mutate} />
+
+                <DialogFooter>
+                  <Button>Save</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardContent>
       </Card>
 
+      {/* ---------------- Table ---------------- */}
       <Card>
         <CardContent>
           <div className="overflow-auto">
@@ -105,8 +218,10 @@ export default function StaffingRequirements() {
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>Role Needed</TableHead>
+                  <TableHead>Quantity</TableHead>
+                  <TableHead>Fulfilled</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Creator</TableHead>
+                  <TableHead>Requested By</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -116,28 +231,66 @@ export default function StaffingRequirements() {
                   <TableRow key={r.id}>
                     <TableCell>{r.id}</TableCell>
                     <TableCell>{r.roleNeeded}</TableCell>
+                    <TableCell>{r.quantity}</TableCell>
+                    <TableCell>{r.fulfilled ?? 0}</TableCell>
                     <TableCell>{r.status}</TableCell>
-                    <TableCell>{r.creator}</TableCell>
+                    <TableCell>{r.primaryUserId}</TableCell>
+
                     <TableCell>
                       <div className="flex gap-2">
+                        {/* View */}
                         <Dialog>
-                          <DialogTrigger asChild><Button size="sm" variant="outline">View</Button></DialogTrigger>
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="outline">View</Button>
+                          </DialogTrigger>
+
                           <DialogContent>
-                            <DialogHeader><DialogTitle>View Staffing Request</DialogTitle></DialogHeader>
-                            <div className="text-sm">
-                              <p><strong>ID:</strong> {r.id}</p>
-                              <p><strong>Role:</strong> {r.roleNeeded}</p>
-                              <p><strong>Count:</strong> {r.count}</p>
-                              <p><strong>Status:</strong> {r.status}</p>
-                              <p><strong>Creator:</strong> {r.creator}</p>
+                            <DialogHeader>
+                              <DialogTitle>Staff Requirement</DialogTitle>
+                            </DialogHeader>
+
+                            <div className="text-sm space-y-2">
+                              <p><b>ID:</b> {r.id}</p>
+                              <p><b>Role:</b> {r.roleNeeded}</p>
+                              <p><b>Quantity:</b> {r.quantity}</p>
+                              <p><b>Status:</b> {r.status}</p>
+                              <p><b>Requested by:</b> {r.primaryUserId}</p>
+                              <p><b>Notes:</b> {r.notes || "—"}</p>
                             </div>
-                            <DialogFooter><Button>Close</Button></DialogFooter>
                           </DialogContent>
                         </Dialog>
 
-                        <Button size="sm">Edit</Button>
-                        <Button size="sm" variant={r.status === "Closed" ? "outline" : "destructive"}>
-                          {r.status === "Closed" ? "Reopen" : "Close"}
+                        {/* Fulfillments */}
+                        <Button asChild size="sm" variant="outline">
+                          <Link to={`/requirements/staff/${r.id}/fulfillments`}>Fulfillments</Link>
+                        </Button>
+
+                        {/* Approve   */}
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() =>
+                            updateReq.mutate({
+                              id: r.id,
+                              body: { status: "inProgress" },
+                            })
+                          }
+                        >
+                          Approve
+                        </Button>
+
+                        {/* Cancel */}
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() =>
+                            updateReq.mutate({
+                              id: r.id,
+                              body: { status: "cancelled" },
+                            })
+                          }
+                        >
+                          Cancel
                         </Button>
                       </div>
                     </TableCell>
@@ -147,15 +300,95 @@ export default function StaffingRequirements() {
             </Table>
           </div>
 
+          {/* Pagination */}
           <div className="flex items-center justify-between mt-4 text-sm">
-            <div>{total === 0 ? "Showing 0 of 0" : `Showing ${start + 1}-${end} of ${total}`}</div>
+            <div>
+              {total === 0
+                ? "Showing 0 of 0"
+                : `Showing ${start + 1} - ${end} of ${total}`}
+            </div>
+
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>{'<'}</Button>
-              <Button size="sm" variant="outline" disabled={end >= total} onClick={() => setPage((p) => p + 1)}>{'>'}</Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page === 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                {"<"}
+              </Button>
+
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={end >= total}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                {">"}
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+/* ---------------- Create Staff Form ---------------- */
+function CreateStaffForm({
+  onSubmit,
+}: {
+  onSubmit: (data: any) => void;
+}) {
+  const [primaryUserId, setPrimaryUserId] = useState("");
+  const [roleNeeded, setRoleNeeded] = useState("nurse");
+  const [quantity, setQuantity] = useState(1);
+  const [notes, setNotes] = useState("");
+
+  return (
+    <div className="flex flex-col gap-4 py-4">
+      <Input
+        placeholder="Primary User ID"
+        value={primaryUserId}
+        onChange={(e) => setPrimaryUserId(e.target.value)}
+      />
+
+      <Select value={roleNeeded} onValueChange={setRoleNeeded}>
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {ROLES.map((role) => (
+            <SelectItem key={role} value={role}>
+              {role}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Input
+        type="number"
+        min={1}
+        value={quantity}
+        onChange={(e) => setQuantity(Number(e.target.value))}
+      />
+
+      <Input
+        placeholder="Notes (optional)"
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+      />
+
+      <Button
+        onClick={() =>
+          onSubmit({
+            primaryUserId,
+            roleNeeded,
+            quantity,
+            notes: notes || undefined,
+          })
+        }
+      >
+        Create
+      </Button>
     </div>
   );
 }

@@ -24,6 +24,11 @@ import ItemRequirementsManagement from './routes/ItemRequiement'
 import RoomRequirementsManagement from './routes/RoomRequirement'
 import StaffingRequirements from './routes/StaffRequirement'
 import AdministratorSettings from './routes/AdminSettings'
+import ItemFulfillmentsPage from './routes/ItemFulfillmentsPage'
+import StaffFulfillmentsPage from './routes/StaffFulfillmentsPage'
+import RoomFulfillmentsPage from './routes/RoomFulfillmentsPage'
+import StaffTimingsOverview from './routes/StaffTimings'
+import StaffLeaveManagement from './routes/StaffLeaves'
 
 function App() {
   return (
@@ -49,9 +54,14 @@ function App() {
         <Route path="rooms" element={<RoomsList/>} />
         <Route path='rooms/:id' element={<RoomDetails/>}/>
         <Route path='requirements/items' element={<ItemRequirementsManagement/>}/>
+        <Route path='requirements/items/:id/fulfillments' element={<ItemFulfillmentsPage/>}/>
         <Route path='requirements/staff' element={<StaffingRequirements/>}/>
+        <Route path='requirements/staff/:id/fulfillments' element={<StaffFulfillmentsPage/>}/>
         <Route path='requirements/rooms' element={<RoomRequirementsManagement/>}/>
+        <Route path='requirements/rooms/:id/fulfillments' element={<RoomFulfillmentsPage/>}/>
         <Route path='settings' element={<AdministratorSettings/>}/>
+        <Route path='timings' element={<StaffTimingsOverview/>}/>
+        <Route path='leaves' element={<StaffLeaveManagement/>}/>
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

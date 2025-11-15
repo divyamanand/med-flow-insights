@@ -1,61 +1,113 @@
 import React, { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Link } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "@/lib/axios";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from "@/components/ui/table";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableHeader,
+  TableHead,
+  TableRow,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
-/* ---------------- Types ---------------- */
-type RoomReq = {
+/* ---------------- Types (from your backend) ---------------- */
+type RoomRequirement = {
   id: string;
+  primaryUserId: string;
   roomType: string;
   quantity: number;
-  status: string;
-  asked_by: string;
+  fulfilled?: number;
+  notes?: string;
+  status: "open" | "inProgress" | "fulfilled" | "cancelled";
+  createdAt: string;
 };
 
-/* ---------------- Mock data (can replace with api.get later) ---------------- */
-const MOCK_ROOM_REQS: RoomReq[] = [
-  { id: "REQ001", roomType: "Patient Room", quantity: 15, status: "Pending", asked_by: "Dr. Sharma" },
-  { id: "REQ002", roomType: "Operating Room", quantity: 3, status: "Pending", asked_by: "Dr. Lee" },
-  { id: "REQ003", roomType: "Operating Room", quantity: 3, status: "Approved", asked_by: "Dr. Kim" },
-  { id: "REQ004", roomType: "Patient Room", quantity: 5, status: "Ordered", asked_by: "Dr. Chen" },
-  { id: "REQ005", roomType: "Laboratory", quantity: 8, status: "Pending", asked_by: "Dr. Khan" },
-  { id: "REQ006", roomType: "Patient Room", quantity: 12, status: "Closed", asked_by: "Dr. Khan" },
-];
+const ROOM_TYPES = ["ICU", "general", "operating", "lab"];
 
-/* ---------------- Component ---------------- */
+/* ------------------------------------------------------------------ */
 export default function RoomRequirementsManagement() {
-  // filters
-  const [roomType, setRoomType] = useState<string>("all");
-  const [status, setStatus] = useState<string>("all");
-  const [asked_bySearch, setasked_bySearch] = useState<string>("");
+  const queryClient = useQueryClient();
 
-  // pagination
+  /* ---------------- Filters ---------------- */
+  const [roomType, setRoomType] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [search, setSearch] = useState("");
+
+  /* ---------------- Pagination ---------------- */
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  // query (mocked for now)
+  /* ---------------- Queries ---------------- */
   const reqQ = useQuery({
     queryKey: ["room-reqs"],
-    queryFn: async (): Promise<RoomReq[]> => {
-      // Replace this with: return api.get('/requirements/rooms') later
-      await new Promise((r) => setTimeout(r, 200)); // simulate latency
-      return MOCK_ROOM_REQS;
+    queryFn: async (): Promise<RoomRequirement[]> => {
+      const res = await api.get("/requirements/rooms");
+      return res.data;
     },
-    staleTime: 30_000,
+    staleTime: 30000,
   });
 
+  /* ---------------- Mutations ---------------- */
+  const createReq = useMutation({
+    mutationFn: (body: {
+      primaryUserId: string;
+      roomType: string;
+      quantity: number;
+      notes?: string;
+    }) => api.post("/requirements/rooms", body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["room-reqs"] }),
+  });
+
+  const updateReq = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: any }) =>
+      api.patch(`/requirements/rooms/${id}`, body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["room-reqs"] }),
+  });
+
+  /* ---------------- Filtered Rows ---------------- */
   const rows = useMemo(() => {
     let data = reqQ.data ?? [];
+
     if (roomType !== "all") data = data.filter((r) => r.roomType === roomType);
     if (status !== "all") data = data.filter((r) => r.status === status);
-    if (asked_bySearch.trim()) data = data.filter((r) => r.asked_by.toLowerCase().includes(asked_bySearch.trim().toLowerCase()));
-    return data;
-  }, [reqQ.data, roomType, status, asked_bySearch]);
 
+    if (search.trim()) {
+      const s = search.trim().toLowerCase();
+      data = data.filter(
+        (r) =>
+          r.id.toLowerCase().includes(s) ||
+          r.primaryUserId.toLowerCase().includes(s)
+      );
+    }
+
+    return data;
+  }, [reqQ.data, roomType, status, search]);
+
+  /* ---------------- Pagination logic ---------------- */
   const total = rows.length;
   const start = (page - 1) * pageSize;
   const end = Math.min(start + pageSize, total);
@@ -63,53 +115,93 @@ export default function RoomRequirementsManagement() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* ---------------- Filters + Create Button ---------------- */}
       <Card>
         <CardHeader>
           <CardTitle>Room Requirements Management</CardTitle>
         </CardHeader>
+
         <CardContent>
           <div className="flex flex-wrap items-center gap-4">
+            {/* Room Type Filter */}
             <div className="min-w-[200px]">
-              <Select value={roomType} onValueChange={(v) => { setRoomType(v); setPage(1); }}>
-                <SelectTrigger><SelectValue placeholder="Room Type" /></SelectTrigger>
+              <Select
+                value={roomType}
+                onValueChange={(v) => {
+                  setRoomType(v);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Room Type" />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Patient Room</SelectItem>
-                  <SelectItem value="Patient Room">Patient Room</SelectItem>
-                  <SelectItem value="Operating Room">Operating Room</SelectItem>
-                  <SelectItem value="Laboratory">Laboratory</SelectItem>
+                  <SelectItem value="all">All Rooms</SelectItem>
+                  {ROOM_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
+            {/* Status Filter */}
             <div className="min-w-[200px]">
-              <Select value={status} onValueChange={(v) => { setStatus(v); setPage(1); }}>
-                <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+              <Select
+                value={status}
+                onValueChange={(v) => {
+                  setStatus(v);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Pending</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Approved">Approved</SelectItem>
-                  <SelectItem value="Ordered">Ordered</SelectItem>
-                  <SelectItem value="Closed">Closed</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="inProgress">In Progress</SelectItem>
+                  <SelectItem value="fulfilled">Fulfilled</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <Input placeholder="Search by asked_by or ID..." className="min-w-[300px]" value={asked_bySearch} onChange={(e) => { setasked_bySearch(e.target.value); setPage(1); }} />
+            {/* Search */}
+            <Input
+              placeholder="Search by ID or primaryUserId..."
+              className="min-w-[300px]"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
 
+            {/* Create Button */}
             <Dialog>
               <DialogTrigger asChild>
                 <Button className="ml-auto">+ New Requirement</Button>
               </DialogTrigger>
+
               <DialogContent>
-                <DialogHeader><DialogTitle>Create Requirement (Demo)</DialogTitle></DialogHeader>
-                <div className="text-sm">Form placeholder — integrate API when ready.</div>
-                <DialogFooter><Button>Save (Demo)</Button></DialogFooter>
+                <DialogHeader>
+                  <DialogTitle>Create Room Requirement</DialogTitle>
+                </DialogHeader>
+
+                <CreateRequirementForm onSubmit={createReq.mutate} />
+
+                <DialogFooter>
+                  <Button onClick={() => {}}>Save</Button>
+                </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>
         </CardContent>
       </Card>
 
+      {/* ---------------- Table ---------------- */}
       <Card>
         <CardContent>
           <div className="overflow-auto">
@@ -117,10 +209,11 @@ export default function RoomRequirementsManagement() {
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
-                  <TableHead>Room Type</TableHead>
-                  <TableHead>Quantity</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Qty</TableHead>
+                  <TableHead>Fulfilled</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>ASKED BY</TableHead>
+                  <TableHead>Requested By</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -131,27 +224,68 @@ export default function RoomRequirementsManagement() {
                     <TableCell>{r.id}</TableCell>
                     <TableCell>{r.roomType}</TableCell>
                     <TableCell>{r.quantity}</TableCell>
+                    <TableCell>{r.fulfilled ?? 0}</TableCell>
                     <TableCell>{r.status}</TableCell>
-                    <TableCell>{r.asked_by}</TableCell>
+                    <TableCell>{r.primaryUserId}</TableCell>
+
                     <TableCell>
                       <div className="flex gap-2">
+                        {/* View */}
                         <Dialog>
-                          <DialogTrigger asChild><Button size="sm" variant="outline">View</Button></DialogTrigger>
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              View
+                            </Button>
+                          </DialogTrigger>
+
                           <DialogContent>
-                            <DialogHeader><DialogTitle>View Requirement</DialogTitle></DialogHeader>
-                            <div className="text-sm">
-                              <p><strong>ID:</strong> {r.id}</p>
-                              <p><strong>Room Type:</strong> {r.roomType}</p>
-                              <p><strong>Quantity:</strong> {r.quantity}</p>
-                              <p><strong>Status:</strong> {r.status}</p>
-                              <p><strong>asked_by:</strong> {r.asked_by}</p>
+                            <DialogHeader>
+                              <DialogTitle>Room Requirement</DialogTitle>
+                            </DialogHeader>
+
+                            <div className="text-sm space-y-2">
+                              <p><b>ID:</b> {r.id}</p>
+                              <p><b>Room Type:</b> {r.roomType}</p>
+                              <p><b>Quantity:</b> {r.quantity}</p>
+                              <p><b>Status:</b> {r.status}</p>
+                              <p><b>Requested By:</b> {r.primaryUserId}</p>
+                              <p><b>Notes:</b> {r.notes || "—"}</p>
                             </div>
-                            <DialogFooter><Button>Close</Button></DialogFooter>
                           </DialogContent>
                         </Dialog>
 
-                        <Button size="sm">Approve</Button>
-                        <Button size="sm" variant="destructive">Delete</Button>
+                        {/* Fulfillments */}
+                        <Button asChild size="sm" variant="outline">
+                          <Link to={`/requirements/rooms/${r.id}/fulfillments`}>Fulfillments</Link>
+                        </Button>
+
+                        {/* Approve (set status=inProgress) */}
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() =>
+                            updateReq.mutate({
+                              id: r.id,
+                              body: { status: "inProgress" },
+                            })
+                          }
+                        >
+                          Approve
+                        </Button>
+
+                        {/* Cancel */}
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() =>
+                            updateReq.mutate({
+                              id: r.id,
+                              body: { status: "cancelled" },
+                            })
+                          }
+                        >
+                          Cancel
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -160,15 +294,94 @@ export default function RoomRequirementsManagement() {
             </Table>
           </div>
 
+          {/* Pagination */}
           <div className="flex items-center justify-between mt-4 text-sm">
-            <div>{total === 0 ? "Showing 0 of 0" : `Showing ${start + 1}-${end} of ${total}`}</div>
+            <div>
+              {total === 0
+                ? "Showing 0 of 0"
+                : `Showing ${start + 1}-${end} of ${total}`}
+            </div>
+
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>{'<'}</Button>
-              <Button size="sm" variant="outline" disabled={end >= total} onClick={() => setPage((p) => p + 1)}>{'>'}</Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page === 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                {"<"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={end >= total}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                {">"}
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+/* ---------------- Create Requirement Form ---------------- */
+
+function CreateRequirementForm({
+  onSubmit,
+}: {
+  onSubmit: (v: any) => void;
+}) {
+  const [primaryUserId, setPrimaryUserId] = useState("");
+  const [roomType, setRoomType] = useState("ICU");
+  const [quantity, setQuantity] = useState(1);
+  const [notes, setNotes] = useState("");
+
+  return (
+    <div className="flex flex-col gap-4 py-2">
+      <Input
+        placeholder="Primary User ID"
+        value={primaryUserId}
+        onChange={(e) => setPrimaryUserId(e.target.value)}
+      />
+
+      <Select value={roomType} onValueChange={setRoomType}>
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="ICU">ICU</SelectItem>
+          <SelectItem value="general">General</SelectItem>
+          <SelectItem value="operating">Operating</SelectItem>
+          <SelectItem value="lab">Lab</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Input
+        type="number"
+        min={1}
+        value={quantity}
+        onChange={(e) => setQuantity(Number(e.target.value))}
+      />
+
+      <Input
+        placeholder="Notes"
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+      />
+
+      <Button
+        onClick={() =>
+          onSubmit({
+            primaryUserId,
+            roomType,
+            quantity,
+            notes: notes || undefined,
+          })
+        }
+      >
+        Create
+      </Button>
     </div>
   );
 }
