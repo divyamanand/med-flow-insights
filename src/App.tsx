@@ -1,6 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import AppLayout from '@/components/layout/AppLayout'
-import Home from './routes/Home'
+// import Home from './routes/Home'
 import About from './routes/About'
 import NotFound from './routes/NotFound'
 import Login from './routes/Login'
@@ -29,13 +29,14 @@ import StaffFulfillmentsPage from './routes/StaffFulfillmentsPage'
 import RoomFulfillmentsPage from './routes/RoomFulfillmentsPage'
 import StaffTimingsOverview from './routes/StaffTimings'
 import StaffLeaveManagement from './routes/StaffLeaves'
+import HomeLanding from './routes/HomeLanding'
 
 function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/" element={<HomeLanding />} />
       <Route path="/" element={<AppLayout />}>
-        <Route index element={<Home />} />
         <Route path="about" element={<About />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="patients" element={<Patients />} />
