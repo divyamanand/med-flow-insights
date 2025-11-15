@@ -29,6 +29,8 @@ import {
   Cog,
   Bell,
   Search,
+  CalendarClock,
+  Clock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbSeparator, BreadcrumbLink, BreadcrumbPage } from '@/components/ui/breadcrumb'
@@ -66,6 +68,8 @@ export default function AppLayout() {
     prescriptions: 'Prescriptions',
     users: 'Users',
     settings: 'Settings',
+    leaves: 'Leaves',
+    timings: 'Timings',
   }
 
   return (
@@ -148,6 +152,22 @@ export default function AppLayout() {
                     <NavLink to="/prescriptions">
                       <Pill />
                       <span>Prescriptions</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Leaves">
+                    <NavLink to="/leaves">
+                      <CalendarClock />
+                      <span>Leaves</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Timings">
+                    <NavLink to="/timings">
+                      <Clock />
+                      <span>Timings</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
