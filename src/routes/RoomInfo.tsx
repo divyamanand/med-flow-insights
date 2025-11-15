@@ -29,7 +29,10 @@ export default function RoomDetails() {
   /* --------------------- Load Room --------------------- */
   const roomQ = useQuery({
     queryKey: ["room", id],
-    queryFn: () => api.get(`/rooms/${id}`),
+    queryFn: async () => {
+      const response: any = await api.get(`/rooms/${id}`);
+      return response.data;
+    },
     enabled: !!id,
   });
 
@@ -88,7 +91,7 @@ export default function RoomDetails() {
   if (roomQ.error)
     return <div className="text-destructive p-6">{(roomQ.error as Error).message}</div>;
 
-  const room = roomQ.data;
+  const room = roomQ.data as any;
 
   return (
     <div className="flex flex-col gap-6">
