@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -115,48 +116,60 @@ export default function RoomRequirementsManagement() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* ---------------- Filters + Create Button ---------------- */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Room Requirements Management</CardTitle>
-        </CardHeader>
+      {/* Top bar: title, search, add button */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-semibold flex-1">Room Requirements</h2>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>+ Add New Requirement</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Room Requirement</DialogTitle>
+              </DialogHeader>
+              <CreateRequirementForm onSubmit={createReq.mutate} />
+              <DialogFooter>
+                <Button>Save</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Search by ID or Requester..."
+            className="max-w-md"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
+        </div>
+      </div>
 
-        <CardContent>
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Room Type Filter */}
-            <div className="min-w-[200px]">
-              <Select
-                value={roomType}
-                onValueChange={(v) => {
-                  setRoomType(v);
-                  setPage(1);
-                }}
-              >
+      {/* Filter row */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm font-medium text-muted-foreground mr-1">Filter Type</span>
+            <div className="min-w-[220px]">
+              <Select value={roomType} onValueChange={(v) => { setRoomType(v); setPage(1); }}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Room Type" />
+                  <SelectValue placeholder="Select Room Type..." />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Rooms</SelectItem>
                   {ROOM_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Status Filter */}
-            <div className="min-w-[200px]">
-              <Select
-                value={status}
-                onValueChange={(v) => {
-                  setStatus(v);
-                  setPage(1);
-                }}
-              >
+            <div className="min-w-[220px]">
+              <Select value={status} onValueChange={(v) => { setStatus(v); setPage(1); }}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder="Select Status..." />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
@@ -167,41 +180,12 @@ export default function RoomRequirementsManagement() {
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Search */}
-            <Input
-              placeholder="Search by ID or primaryUserId..."
-              className="min-w-[300px]"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-            />
-
-            {/* Create Button */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="ml-auto">+ New Requirement</Button>
-              </DialogTrigger>
-
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create Room Requirement</DialogTitle>
-                </DialogHeader>
-
-                <CreateRequirementForm onSubmit={createReq.mutate} />
-
-                <DialogFooter>
-                  <Button onClick={() => {}}>Save</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button variant="ghost" className="text-muted-foreground" onClick={() => { setRoomType("all"); setStatus("all"); setSearch(""); setPage(1); }}>Clear Filters</Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* ---------------- Table ---------------- */}
+      {/* Table */}
       <Card>
         <CardContent>
           <div className="overflow-auto">
@@ -221,12 +205,17 @@ export default function RoomRequirementsManagement() {
               <TableBody>
                 {paged.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell>{r.id}</TableCell>
-                    <TableCell>{r.roomType}</TableCell>
+                    <TableCell className="whitespace-nowrap">{r.id}</TableCell>
+                    <TableCell><Badge variant="secondary">{r.roomType}</Badge></TableCell>
                     <TableCell>{r.quantity}</TableCell>
                     <TableCell>{r.fulfilled ?? 0}</TableCell>
-                    <TableCell>{r.status}</TableCell>
-                    <TableCell>{r.primaryUserId}</TableCell>
+                    <TableCell>
+                      {r.status === "fulfilled" && <Badge>{"Fulfilled"}</Badge>}
+                      {r.status === "inProgress" && <Badge variant="secondary">In Progress</Badge>}
+                      {r.status === "open" && <Badge variant="outline">Open</Badge>}
+                      {r.status === "cancelled" && <Badge variant="destructive">Cancelled</Badge>}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">{r.primaryUserId}</TableCell>
 
                     <TableCell>
                       <div className="flex gap-2">
@@ -297,27 +286,16 @@ export default function RoomRequirementsManagement() {
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4 text-sm">
             <div>
-              {total === 0
-                ? "Showing 0 of 0"
-                : `Showing ${start + 1}-${end} of ${total}`}
+              {total === 0 ? "Showing 0 of 0" : `Showing ${start + 1}-${end} of ${total}`}
             </div>
 
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={page === 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                {"<"}
+              <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                « Previous
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={end >= total}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                {">"}
+              <div className="px-2">{page}</div>
+              <Button size="sm" variant="outline" disabled={end >= total} onClick={() => setPage((p) => p + 1)}>
+                Next »
               </Button>
             </div>
           </div>

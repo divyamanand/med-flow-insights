@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableHeader,
@@ -121,12 +122,30 @@ export default function ItemRequirementsManagement() {
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6">
-      <h1 className="text-2xl font-semibold">Item Requirements Management</h1>
+      {/* Top bar */}
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-semibold flex-1">Hospital Supply Management System</h1>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button>+ Add New Requirement</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create Item Requirement</DialogTitle>
+            </DialogHeader>
+            <CreateItemForm onSubmit={createReq.mutate} />
+            <DialogFooter>
+              <Button>Create</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
 
       <div className="grid lg:grid-cols-[260px_1fr] gap-6">
         {/* ---------------- LEFT FILTER PANEL ---------------- */}
         <Card>
           <CardContent className="pt-6 space-y-6">
+            <p className="text-sm font-semibold tracking-wide text-muted-foreground">FILTERS</p>
             {/* Kind Filter */}
             <div>
               <p className="font-medium mb-2">Kind</p>
@@ -200,26 +219,8 @@ export default function ItemRequirementsManagement() {
 
         {/* ---------------- RIGHT TABLE PANEL ---------------- */}
         <Card>
-          <CardHeader className="flex items-center justify-between">
+          <CardHeader>
             <CardTitle className="text-xl">Current Item Requirements</CardTitle>
-
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button>+ Add Requirement</Button>
-              </DialogTrigger>
-
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create Item Requirement</DialogTitle>
-                </DialogHeader>
-
-                <CreateItemForm onSubmit={createReq.mutate} />
-
-                <DialogFooter>
-                  <Button>Create</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
           </CardHeader>
 
           <CardContent>
@@ -229,7 +230,6 @@ export default function ItemRequirementsManagement() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>ID</TableHead>
-                    <TableHead>Kind</TableHead>
                     <TableHead>Quantity</TableHead>
                     <TableHead>Fulfilled</TableHead>
                     <TableHead>Status</TableHead>
@@ -241,11 +241,18 @@ export default function ItemRequirementsManagement() {
                 <TableBody>
                   {rows.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell>{r.id}</TableCell>
-                      <TableCell>{r.kind}</TableCell>
+                      <TableCell className="whitespace-nowrap flex items-center gap-2">
+                        <span>{r.id}</span>
+                        <Badge variant="secondary">{r.kind}</Badge>
+                      </TableCell>
                       <TableCell>{r.quantity}</TableCell>
                       <TableCell>{r.fulfilled ?? 0}</TableCell>
-                      <TableCell>{r.status}</TableCell>
+                      <TableCell>
+                        {r.status === "fulfilled" && <Badge>{"Completed"}</Badge>}
+                        {r.status === "inProgress" && <Badge variant="secondary">In Progress</Badge>}
+                        {r.status === "open" && <Badge variant="outline">Pending</Badge>}
+                        {r.status === "cancelled" && <Badge variant="destructive">Cancelled</Badge>}
+                      </TableCell>
                       <TableCell>{r.primaryUserId}</TableCell>
 
                       <TableCell className="text-right space-x-2">
@@ -316,22 +323,9 @@ export default function ItemRequirementsManagement() {
               </p>
 
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 1}
-                  onClick={() => setPage(page - 1)}
-                >
-                  {"<"}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={end >= filtered.length}
-                  onClick={() => setPage(page + 1)}
-                >
-                  {">"}
-                </Button>
+                <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(page - 1)}>« Prev</Button>
+                <div className="px-2">{page}</div>
+                <Button variant="outline" size="sm" disabled={end >= filtered.length} onClick={() => setPage(page + 1)}>Next »</Button>
               </div>
             </div>
           </CardContent>

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableHeader,
@@ -128,45 +129,53 @@ export default function StaffingRequirements() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* ---------------- Filters + Create Button ---------------- */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Staffing Requirements</CardTitle>
-        </CardHeader>
+      {/* Top bar: overview title, search, add button */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-semibold flex-1">Staff Requirement Overview</h2>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>+ Add New Requirement</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Staff Requirement</DialogTitle>
+              </DialogHeader>
+              <CreateStaffForm onSubmit={createReq.mutate} />
+              <DialogFooter>
+                <Button>Submit</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+        <div className="flex items-center gap-3">
+          <Input
+            placeholder="Search by ID or User ID..."
+            className="max-w-md"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          />
+        </div>
+      </div>
 
-        <CardContent>
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Role Filter */}
-            <div className="min-w-[200px]">
-              <Select
-                value={roleFilter}
-                onValueChange={(v) => {
-                  setRoleFilter(v);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger><SelectValue placeholder="Role Needed" /></SelectTrigger>
+      {/* Filters row */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="min-w-[220px]">
+              <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(1); }}>
+                <SelectTrigger><SelectValue placeholder="Filter by Role" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Roles</SelectItem>
                   {ROLES.map((role) => (
-                    <SelectItem key={role} value={role}>
-                      {role}
-                    </SelectItem>
+                    <SelectItem key={role} value={role}>{role}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Status Filter */}
-            <div className="min-w-[200px]">
-              <Select
-                value={statusFilter}
-                onValueChange={(v) => {
-                  setStatusFilter(v);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+            <div className="min-w-[220px]">
+              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+                <SelectTrigger><SelectValue placeholder="Filter by Status" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="open">Open</SelectItem>
@@ -176,40 +185,12 @@ export default function StaffingRequirements() {
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Search */}
-            <Input
-              placeholder="Search by ID or primaryUserId..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-            />
-
-            {/* Create new requirement */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="ml-auto">+ New Request</Button>
-              </DialogTrigger>
-
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create Staff Requirement</DialogTitle>
-                </DialogHeader>
-
-                <CreateStaffForm onSubmit={createReq.mutate} />
-
-                <DialogFooter>
-                  <Button>Save</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button variant="ghost" className="text-muted-foreground" onClick={() => { setRoleFilter("all"); setStatusFilter("all"); setSearch(""); setPage(1); }}>Clear Filters</Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* ---------------- Table ---------------- */}
+      {/* Table */}
       <Card>
         <CardContent>
           <div className="overflow-auto">
@@ -229,12 +210,17 @@ export default function StaffingRequirements() {
               <TableBody>
                 {paged.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell>{r.id}</TableCell>
-                    <TableCell>{r.roleNeeded}</TableCell>
+                    <TableCell className="whitespace-nowrap">{r.id}</TableCell>
+                    <TableCell><Badge variant="secondary">{r.roleNeeded}</Badge></TableCell>
                     <TableCell>{r.quantity}</TableCell>
                     <TableCell>{r.fulfilled ?? 0}</TableCell>
-                    <TableCell>{r.status}</TableCell>
-                    <TableCell>{r.primaryUserId}</TableCell>
+                    <TableCell>
+                      {r.status === "fulfilled" && <Badge>{"Fulfilled"}</Badge>}
+                      {r.status === "inProgress" && <Badge variant="secondary">In Progress</Badge>}
+                      {r.status === "open" && <Badge variant="outline">Open</Badge>}
+                      {r.status === "cancelled" && <Badge variant="destructive">Cancelled</Badge>}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">{r.primaryUserId}</TableCell>
 
                     <TableCell>
                       <div className="flex gap-2">
@@ -309,23 +295,9 @@ export default function StaffingRequirements() {
             </div>
 
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={page === 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                {"<"}
-              </Button>
-
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={end >= total}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                {">"}
-              </Button>
+              <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>« Previous</Button>
+              <div className="px-2">{page}</div>
+              <Button size="sm" variant="outline" disabled={end >= total} onClick={() => setPage((p) => p + 1)}>Next »</Button>
             </div>
           </div>
         </CardContent>
