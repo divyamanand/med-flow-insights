@@ -57,31 +57,41 @@ export default function Dashboard() {
     )
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Empty className="border-destructive/20 bg-destructive/5">
-          <EmptyHeader>
-            <EmptyTitle className="text-destructive">Error Loading Dashboard</EmptyTitle>
-            <EmptyDescription>{(error as Error).message}</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      </div>
-    )
+  // Build a safe summary using defaults when fields are missing
+  const s = (data as Partial<DashboardSummary> | undefined) ?? {}
+  const summary: DashboardSummary = {
+    date: s.date ?? new Date().toISOString(),
+    appointmentsToday: { count: s.appointmentsToday?.count ?? 0 },
+    appointmentsLast7: { days: s.appointmentsLast7?.days ?? [] },
+    pendingInvitations: { count: s.pendingInvitations?.count ?? 0 },
+    lowStock: {
+      threshold: s.lowStock?.threshold ?? 0,
+      count: s.lowStock?.count ?? 0,
+    },
+    roomsOccupied: { count: s.roomsOccupied?.count ?? 0 },
+    staffOnLeave: { count: s.staffOnLeave?.count ?? 0 },
+    inventorySnapshot: {
+      totalItems: s.inventorySnapshot?.totalItems ?? 0,
+      totalStock: s.inventorySnapshot?.totalStock ?? 0,
+      expiringSoon: s.inventorySnapshot?.expiringSoon ?? [],
+      mostInDemand: s.inventorySnapshot?.mostInDemand ?? [],
+    },
+    requirementsSummary: {
+      item: s.requirementsSummary?.item ?? {},
+      staff: s.requirementsSummary?.staff ?? {},
+      room: s.requirementsSummary?.room ?? {},
+    },
+    recentActivity: { count: s.recentActivity?.count ?? 0 },
   }
 
-  if (!data) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Empty className="border">
-          <EmptyHeader>
-            <EmptyTitle>No data available</EmptyTitle>
-            <EmptyDescription>Connect the dashboard endpoint to view statistics.</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      </div>
-    )
+  if (error) {
+    // Log the error but continue rendering with defaulted values
+    // eslint-disable-next-line no-console
+    console.warn('Dashboard load error; rendering with defaults:', error)
   }
+
+  // eslint-disable-next-line no-console
+  console.log('Dashboard data (safe)', summary)
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -99,66 +109,66 @@ export default function Dashboard() {
       <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Appointments Today"
-          value={data.appointmentsToday.count}
+          value={summary.appointmentsToday.count}
           icon={Calendar}
           description="Total scheduled"
-          className="bg-gradient-to-br from-card to-primary/5"
+          className="bg-linear-to-br from-card to-primary/5"
         />
 
         <StatCard
           title="Pending Invitations"
-          value={data.pendingInvitations.count}
+          value={summary.pendingInvitations.count}
           icon={UserCheck}
           description="Not yet accepted"
-          className="bg-gradient-to-br from-card to-accent/5"
+          className="bg-linear-to-br from-card to-accent/5"
         />
 
         <StatCard
           title="Low Stock Items"
-          value={data.lowStock.count}
+          value={summary.lowStock.count}
           icon={AlertCircle}
           description="Below threshold"
-          className="bg-gradient-to-br from-card to-destructive/5"
+          className="bg-linear-to-br from-card to-destructive/5"
         />
 
         <StatCard
           title="Rooms Occupied"
-          value={data.roomsOccupied.count}
+          value={summary.roomsOccupied.count}
           icon={Bed}
           description="Currently in use"
-          className="bg-gradient-to-br from-card to-success/5"
+          className="bg-linear-to-br from-card to-success/5"
         />
 
         <StatCard
           title="Staff on Leave"
-          value={data.staffOnLeave.count}
+          value={summary.staffOnLeave.count}
           icon={UserX}
           description="Today"
-          className="bg-gradient-to-br from-card to-secondary/5"
+          className="bg-linear-to-br from-card to-secondary/5"
         />
 
         <StatCard
           title="Expiring Soon"
-          value={data.inventorySnapshot.expiringSoon.length}
+          value={summary.inventorySnapshot.expiringSoon.length}
           icon={Package}
           description="Medicine count"
-          className="bg-gradient-to-br from-card to-warning/5"
+          className="bg-linear-to-br from-card to-warning/5"
         />
 
         <StatCard
           title="Most In-Demand"
-          value={data.inventorySnapshot.mostInDemand.length}
+          value={summary.inventorySnapshot.mostInDemand.length}
           icon={TrendingUp}
           description="Top items"
-          className="bg-gradient-to-br from-card to-info/5"
+          className="bg-linear-to-br from-card to-info/5"
         />
 
         <StatCard
           title="Recent Activity"
-          value={data.recentActivity.count}
+          value={summary.recentActivity.count}
           icon={Activity}
           description="Last 24 hours"
-          className="bg-gradient-to-br from-card to-chart-3/5"
+          className="bg-linear-to-br from-card to-chart-3/5"
         />
       </div>
 
@@ -173,11 +183,11 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 bg-muted/50 rounded-lg">
                 <p className="text-sm text-muted-foreground mb-1">Total Items</p>
-                <p className="text-2xl font-semibold">{data.inventorySnapshot.totalItems}</p>
+                <p className="text-2xl font-semibold">{summary.inventorySnapshot.totalItems}</p>
               </div>
               <div className="p-4 bg-muted/50 rounded-lg">
                 <p className="text-sm text-muted-foreground mb-1">Total Stock</p>
-                <p className="text-2xl font-semibold">{data.inventorySnapshot.totalStock}</p>
+                <p className="text-2xl font-semibold">{summary.inventorySnapshot.totalStock}</p>
               </div>
             </div>
           </CardContent>
@@ -192,19 +202,19 @@ export default function Dashboard() {
             <div className="flex justify-between items-center p-3 bg-primary/5 rounded-lg">
               <span className="text-sm font-medium">Item Requirements</span>
               <span className="text-lg font-semibold text-primary">
-                {Object.keys(data.requirementsSummary.item).length}
+                {Object.keys(summary.requirementsSummary.item).length}
               </span>
             </div>
             <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
               <span className="text-sm font-medium">Staff Requirements</span>
               <span className="text-lg font-semibold text-accent">
-                {Object.keys(data.requirementsSummary.staff).length}
+                {Object.keys(summary.requirementsSummary.staff).length}
               </span>
             </div>
             <div className="flex justify-between items-center p-3 bg-secondary/5 rounded-lg">
               <span className="text-sm font-medium">Room Requirements</span>
               <span className="text-lg font-semibold text-secondary-foreground">
-                {Object.keys(data.requirementsSummary.room).length}
+                {Object.keys(summary.requirementsSummary.room).length}
               </span>
             </div>
           </CardContent>

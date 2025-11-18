@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const baseURL = "http://localhost:4000"
+const baseURL = "http://hospital-env.eba-ua4c2hy3.ap-south-1.elasticbeanstalk.com"
 
 export const http = axios.create({
   baseURL: baseURL || '/',

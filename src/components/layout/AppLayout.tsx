@@ -1,4 +1,5 @@
 import { NavLink, Outlet, Link, useLocation } from 'react-router-dom'
+import { Fragment } from 'react'
 import {
   SidebarProvider,
   Sidebar,
@@ -220,9 +221,9 @@ export default function AppLayout() {
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 {segments.map((seg, idx) => (
-                  <>
-                    <BreadcrumbSeparator key={`sep-${idx}`} />
-                    <BreadcrumbItem key={`item-${idx}`}>
+                  <Fragment key={`crumb-${idx}`}>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
                       {idx < segments.length - 1 ? (
                         <BreadcrumbLink asChild>
                           <Link to={crumbHref(idx)}>{labelMap[seg] || seg}</Link>
@@ -231,7 +232,7 @@ export default function AppLayout() {
                         <BreadcrumbPage>{labelMap[seg] || seg}</BreadcrumbPage>
                       )}
                     </BreadcrumbItem>
-                  </>
+                  </Fragment>
                 ))}
               </BreadcrumbList>
             </Breadcrumb>

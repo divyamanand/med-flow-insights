@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMemo, useState, useEffect } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import { api } from '@/lib/axios'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,10 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 import { Spinner } from '@/components/ui/spinner'
 
 type Staff = {
   id: string
+  userId: string
   name: string
   role: string
   phone: string | null
@@ -32,8 +35,12 @@ export default function StaffDirectory() {
   const [search, setSearch] = useState('')
   const [role, setRole] = useState<string>('')
   const [specialtyId, setSpecialtyId] = useState<string>('')
+  const [isAvailable, setIsAvailable] = useState<boolean>(false)
+  const [onLeave, setOnLeave] = useState<boolean>(false)
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  const [page, setPage] = useState(1)
+  const initialPage = parseInt(searchParams.get('page') || '1', 10)
+  const [page, setPage] = useState(isNaN(initialPage) ? 1 : initialPage)
   const pageSize = 10
 
   const specialtiesQuery = useQuery<Specialty[]>({
@@ -46,14 +53,43 @@ export default function StaffDirectory() {
       ]),
   })
 
+  // Initialize from URL params once
+  useEffect(() => {
+    const spSearch = searchParams.get('search') || ''
+    const spRole = searchParams.get('role') || ''
+    const spSpec = searchParams.get('specialtyId') || ''
+    const spAvailable = searchParams.get('isAvailable') === 'true'
+    const spOnLeave = searchParams.get('onLeave') === 'true'
+    setSearch(spSearch)
+    setRole(spRole)
+    setSpecialtyId(spSpec)
+    setIsAvailable(spAvailable)
+    setOnLeave(spOnLeave)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  function updateSearchParams(next: Record<string, any>) {
+    const sp = new URLSearchParams(searchParams)
+    Object.entries(next).forEach(([k, v]) => {
+      if (v === '' || v === undefined || v === null || (typeof v === 'boolean' && v === false)) {
+        sp.delete(k)
+      } else {
+        sp.set(k, String(v))
+      }
+    })
+    setSearchParams(sp, { replace: true })
+  }
+
+  const staffFilters = {
+    search,
+    role,
+    specialtyId,
+    isAvailable: isAvailable ? true : undefined,
+    onLeave: onLeave ? true : undefined,
+  }
   const staffQuery = useQuery<Staff[]>({
-    queryKey: ['staff', { search, role, specialtyId }],
-    queryFn: () =>
-      api.get<Staff[]>('/staff', {
-        search,
-        role,
-        specialtyId,
-      }),
+    queryKey: ['staff', staffFilters],
+    queryFn: () => api.get<Staff[]>('/staff', staffFilters),
   })
 
   const filtered = useMemo(() => {
@@ -95,16 +131,20 @@ export default function StaffDirectory() {
               placeholder="Search by name"
               value={search}
               onChange={(e) => {
-                setSearch(e.target.value)
+                const val = e.target.value
+                setSearch(val)
                 setPage(1)
+                updateSearchParams({ search: val || undefined, page: 1 })
               }}
             />
 
             <Select
               value={role}
               onValueChange={(v) => {
-                setRole(v === role ? '' : v)
+                const next = v === role ? '' : v
+                setRole(next)
                 setPage(1)
+                updateSearchParams({ role: next || undefined, page: 1 })
               }}
             >
               <SelectTrigger>
@@ -122,8 +162,10 @@ export default function StaffDirectory() {
             <Select
               value={specialtyId}
               onValueChange={(v) => {
-                setSpecialtyId(v === specialtyId ? '' : v)
+                const next = v === specialtyId ? '' : v
+                setSpecialtyId(next)
                 setPage(1)
+                updateSearchParams({ specialtyId: next || undefined, page: 1 })
               }}
             >
               <SelectTrigger>
@@ -138,7 +180,33 @@ export default function StaffDirectory() {
               </SelectContent>
             </Select>
           </div>
-          <div className="mt-2 text-xs text-muted-foreground">Filter</div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-4">
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={isAvailable}
+                onCheckedChange={(ck) => {
+                  setIsAvailable(ck)
+                  setPage(1)
+                  updateSearchParams({ isAvailable: ck ? true : undefined, page: 1 })
+                }}
+                id="flt-available"
+              />
+              <Label htmlFor="flt-available" className="text-sm">Available</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={onLeave}
+                onCheckedChange={(ck) => {
+                  setOnLeave(ck)
+                  setPage(1)
+                  updateSearchParams({ onLeave: ck ? true : undefined, page: 1 })
+                }}
+                id="flt-onleave"
+              />
+              <Label htmlFor="flt-onleave" className="text-sm">On Leave</Label>
+            </div>
+          </div>
+          <div className="mt-2 text-xs text-muted-foreground">Filters</div>
         </CardContent>
       </Card>
 
@@ -174,7 +242,11 @@ export default function StaffDirectory() {
                 <TableBody>
                   {paged.map((s) => (
                     <TableRow key={s.id}>
-                      <TableCell className="font-medium">{s.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <Link to={`/staff/${s.id}`} className="text-primary hover:underline">
+                          {s.name}
+                        </Link>
+                      </TableCell>
                       <TableCell className="capitalize">{s.role}</TableCell>
                       <TableCell>{s.phone ?? '-'}</TableCell>
                       <TableCell>{s.email ?? '-'}</TableCell>
@@ -210,7 +282,11 @@ export default function StaffDirectory() {
                   <Button
                     variant="ghost"
                     disabled={pageSafe <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    onClick={() => {
+                      const next = Math.max(1, pageSafe - 1)
+                      setPage(next)
+                      updateSearchParams({ page: next })
+                    }}
                   >
                     Previous
                   </Button>
@@ -221,7 +297,10 @@ export default function StaffDirectory() {
                       <Button
                         key={n}
                         variant={n === pageSafe ? 'default' : 'ghost'}
-                        onClick={() => setPage(n)}
+                        onClick={() => {
+                          setPage(n)
+                          updateSearchParams({ page: n })
+                        }}
                       >
                         {n}
                       </Button>
@@ -234,7 +313,11 @@ export default function StaffDirectory() {
                   <Button
                     variant="ghost"
                     disabled={pageSafe >= pageCount}
-                    onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                    onClick={() => {
+                      const next = Math.min(pageCount, pageSafe + 1)
+                      setPage(next)
+                      updateSearchParams({ page: next })
+                    }}
                   >
                     Next
                   </Button>
@@ -322,39 +405,136 @@ function ViewStaffDialog({ staff }: { staff: Staff }) {
 }
 
 function EditStaffDialog({ staff }: { staff: Staff }) {
+  const qc = useQueryClient()
+  const [open, setOpen] = useState(false)
+
+  type UserDetail = {
+    id: string
+    email: string
+    role: string
+    type: string
+    firstName: string | null
+    lastName: string | null
+    dateOfBirth: string | null
+    gender: string | null
+    phone: string | null
+    avatarUrl?: string | null
+  }
+
+  const { data, isLoading } = useQuery<UserDetail>({
+    queryKey: ['user', staff.userId, 'detail'],
+    queryFn: () => api.get<UserDetail>(`/users/${staff.userId}`),
+    enabled: open,
+  })
+
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [gender, setGender] = useState<string>('')
+  const [avatarUrl, setAvatarUrl] = useState('')
+
+  useEffect(() => {
+    if (data) {
+      setFirstName(data.firstName ?? (staff.name.split(' ')[0] ?? ''))
+      setLastName(data.lastName ?? (staff.name.split(' ').slice(1).join(' ') ?? ''))
+      setPhone(data.phone ?? (staff.phone ?? ''))
+      setDateOfBirth(data.dateOfBirth ?? '')
+      setGender((data.gender ?? '').toString())
+      setAvatarUrl(data.avatarUrl ?? '')
+    } else {
+      // fallback from staff row
+      setFirstName(staff.name.split(' ')[0] ?? '')
+      setLastName(staff.name.split(' ').slice(1).join(' ') ?? '')
+      setPhone(staff.phone ?? '')
+    }
+  }, [data, staff])
+
+  const updateMut = useMutation({
+    mutationFn: async () => {
+      const body: Record<string, string> = {}
+      if (firstName) body.firstName = firstName
+      if (lastName) body.lastName = lastName
+      if (phone) body.phone = phone
+      if (dateOfBirth) body.dateOfBirth = dateOfBirth
+      if (gender) body.gender = gender
+      if (avatarUrl) body.avatarUrl = avatarUrl
+      return api.put(`/users/${staff.userId}`, body)
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['staff'] }),
+        qc.invalidateQueries({ queryKey: ['user', staff.userId, 'detail'] }),
+      ])
+      setOpen(false)
+    },
+  })
+
+  const canSave = !!firstName || !!lastName || !!phone || !!dateOfBirth || !!gender || !!avatarUrl
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline">Edit</Button>
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Staff (Demo)</DialogTitle>
+          <DialogTitle>Edit Staff</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-3">
-          <div>
-            <Label>Name</Label>
-            <Input defaultValue={staff.name} />
-          </div>
-          <div>
-            <Label>Role</Label>
-            <Input defaultValue={staff.role} />
-          </div>
-          <div>
-            <Label>Phone</Label>
-            <Input defaultValue={staff.phone ?? ''} />
-          </div>
-          <div>
-            <Label>Email</Label>
-            <Input defaultValue={staff.email ?? ''} />
-          </div>
-        </div>
+        {isLoading ? (
+          <div className="flex items-center gap-2 text-sm"><Spinner className="size-4" /> Loading…</div>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (!canSave) return
+              updateMut.mutate()
+            }}
+            className="grid gap-3"
+          >
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div>
+                <Label>First Name</Label>
+                <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              </div>
+              <div>
+                <Label>Last Name</Label>
+                <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div>
+                <Label>Phone</Label>
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+              <div>
+                <Label>Date of Birth</Label>
+                <Input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div>
+                <Label>Gender</Label>
+                <Input placeholder="male | female | other" value={gender} onChange={(e) => setGender(e.target.value)} />
+              </div>
+              <div>
+                <Label>Avatar URL</Label>
+                <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
+              </div>
+            </div>
 
-        <DialogFooter>
-          <Button>Save (Demo)</Button>
-        </DialogFooter>
+            {updateMut.isError ? (
+              <div className="text-sm text-destructive">{(updateMut.error as Error)?.message ?? 'Update failed'}</div>
+            ) : null}
+
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={updateMut.isPending}>Cancel</Button>
+              <Button type="submit" disabled={!canSave || updateMut.isPending}>{updateMut.isPending ? 'Saving…' : 'Save'}</Button>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   )
