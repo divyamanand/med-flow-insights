@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const baseURL = "http://hospital-env.eba-ua4c2hy3.ap-south-1.elasticbeanstalk.com"
+const baseURL = import.meta.env.VITE_API_BASE_URL || "http://hospital-env.eba-ua4c2hy3.ap-south-1.elasticbeanstalk.com"
 
 export const http = axios.create({
   baseURL: baseURL || '/',
