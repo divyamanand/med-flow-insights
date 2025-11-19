@@ -48,3 +48,42 @@ npm run test
 npm run build
 npm run preview
 ```
+
+## Deployment (Vercel)
+For client-side routing (React Router) on Vercel you must ensure all non-file paths rewrite to `index.html` so deep links do not 404.
+
+This project includes a `vercel.json` with SPA fallback:
+
+```json
+{
+	"version": 2,
+	"buildCommand": "npm run build",
+	"outputDirectory": "dist",
+	"routes": [
+		{ "handle": "filesystem" },
+		{ "src": "/.*", "dest": "/index.html" }
+	]
+}
+```
+
+Deployment steps:
+```powershell
+# 1. Build locally (optional)
+npm run build
+
+# 2. Push to GitHub; connect repo in Vercel dashboard
+#    Framework preset: Other / Vite
+#    Build Command:    npm run build
+#    Output Directory: dist
+
+# 3. Set environment variables in Vercel (same as .env values, e.g. VITE_API_BASE_URL)
+
+# 4. Trigger deploy; visit any route like /patients or /staff directly
+```
+
+If you see 404s after deployment, confirm:
+- `vercel.json` is at repository root.
+- Build output contains `dist/index.html`.
+- No conflicting `public/` directory overriding routes.
+
+To add headers or additional rewrites, extend `vercel.json` accordingly.
