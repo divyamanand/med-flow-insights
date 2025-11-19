@@ -1,16 +1,16 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { Plus, Trash2, UserMinus } from 'lucide-react'
+import { Plus, Trash2, UserMinus, UserRound } from 'lucide-react'
 
 import { api } from '@/lib/axios'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
 
 type User = {
@@ -61,53 +61,78 @@ export default function Users() {
   function resetToFirstPage() { setPage(1) }
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-6">
-      {/* Page Header */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-xl sm:text-2xl">User Management</CardTitle>
-          <CreateUserDialog />
+    <div className="flex flex-col gap-6 sm:gap-8 animate-slide-in-bottom">
+      {/* Enhanced Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+            <UserRound className="size-4 text-primary" />
+            <span className="text-sm font-medium text-primary">User Management</span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight gradient-text">
+            User Directory
+          </h1>
+          <p className="text-muted-foreground text-sm md:text-base">
+            Manage all users, roles, and permissions
+          </p>
+        </div>
+        <CreateUserDialog />
+      </div>
+
+      {/* Modern Filters Card */}
+      <Card className="border-2 border-border/50 shadow-lg glass-effect">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Plus className="size-5 text-primary" />
+            <CardTitle>Filters & Search</CardTitle>
+          </div>
         </CardHeader>
-      </Card>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Search</label>
+              <Input
+                placeholder="Search by Name or Email..."
+                value={emailLike}
+                onChange={(e) => { setEmailLike(e.target.value); resetToFirstPage() }}
+                className="border-2 focus:border-primary transition-colors"
+              />
+            </div>
 
-      {/* Filters Row */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Input
-              placeholder="Search by Name or Email"
-              value={emailLike}
-              onChange={(e) => { setEmailLike(e.target.value); resetToFirstPage() }}
-            />
-
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">Role</div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Role</label>
               <Select value={role} onValueChange={(v) => { setRole(v); resetToFirstPage() }}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="border-2 focus:border-primary">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {roles.map((r) => (<SelectItem key={r} value={r}>{r}</SelectItem>))}
+                  <SelectItem value="all">All Roles</SelectItem>
+                  {roles.map((r) => (<SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">Type</div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Type</label>
               <Select value={type} onValueChange={(v) => { setType(v); resetToFirstPage() }}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="border-2 focus:border-primary">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {types.map((t) => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
+                  <SelectItem value="all">All Types</SelectItem>
+                  {types.map((t) => (<SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">Extra</div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Extra Filter</label>
               <Select value={extra} onValueChange={(v) => { setExtra(v); resetToFirstPage() }}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="border-2 focus:border-primary">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {extraOptions.map((x) => (<SelectItem key={x} value={x}>{x}</SelectItem>))}
+                  {extraOptions.map((x) => (<SelectItem key={x} value={x} className="capitalize">{x}</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
@@ -115,50 +140,70 @@ export default function Users() {
         </CardContent>
       </Card>
 
-      {/* Users Table */}
-      <Card>
-        <CardContent className="pt-6">
+      {/* Modern Users Table */}
+      <Card className="border-2 border-border/50 shadow-lg glass-effect overflow-hidden">
+        <CardHeader className="border-b border-border/50 bg-linear-to-r from-primary/5 to-accent/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <UserRound className="size-5 text-primary" />
+              <CardTitle>Users List</CardTitle>
+            </div>
+            <Badge variant="outline" className="px-3 py-1">{total} Total</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
           {usersQ.isLoading ? (
-            <div className="flex items-center justify-center p-10"><Spinner className="size-6" /></div>
+            <div className="flex items-center justify-center gap-3 p-12">
+              <Spinner className="size-6 text-primary" />
+              <span className="text-lg font-medium">Loading users...</span>
+            </div>
           ) : usersQ.error ? (
-            <div className="text-destructive">{(usersQ.error as Error).message}</div>
+            <div className="p-12 text-center">
+              <div className="text-destructive font-medium">{(usersQ.error as Error).message}</div>
+            </div>
           ) : (
             <>
-              <div className="w-full overflow-auto">
+              <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-10">#</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>CreatedAt</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                      <TableHead className="w-12 font-bold">#</TableHead>
+                      <TableHead className="font-bold">Name</TableHead>
+                      <TableHead className="font-bold">Email</TableHead>
+                      <TableHead className="font-bold">Role</TableHead>
+                      <TableHead className="font-bold">Type</TableHead>
+                      <TableHead className="font-bold">Phone</TableHead>
+                      <TableHead className="font-bold">Created</TableHead>
+                      <TableHead className="text-right font-bold">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {pageRows.map((u, idx) => (
-                      <TableRow key={u.id}>
-                        <TableCell>{start + idx + 1}</TableCell>
-                        <TableCell>{[u.firstName, u.lastName].filter(Boolean).join(' ') || '-'}</TableCell>
-                        <TableCell>{u.email}</TableCell>
-                        <TableCell className="capitalize">{u.role}</TableCell>
-                        <TableCell className="capitalize">{u.type}</TableCell>
-                        <TableCell>{u.phone ?? '-'}</TableCell>
-                        <TableCell>{u.createdAt ? format(new Date(u.createdAt), 'PP') : '-'}</TableCell>
+                      <TableRow key={u.id} className="hover:bg-primary/5 transition-colors">
+                        <TableCell className="font-mono text-muted-foreground">{start + idx + 1}</TableCell>
+                        <TableCell className="font-semibold">{[u.firstName, u.lastName].filter(Boolean).join(' ') || '-'}</TableCell>
+                        <TableCell className="text-sm">{u.email}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">{u.role}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="capitalize">{u.type}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{u.phone ?? '-'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{u.createdAt ? format(new Date(u.createdAt), 'PP') : '-'}</TableCell>
                         <TableCell className="text-right">
-                          <DisableUserDialog>
-                            <Button variant="ghost" size="sm" title="Disable">
-                              <UserMinus className="size-4 text-muted-foreground" />
-                            </Button>
-                          </DisableUserDialog>
-                          <DeleteUserDialog>
-                            <Button variant="ghost" size="sm" title="Delete">
-                              <Trash2 className="size-4 text-destructive" />
-                            </Button>
-                          </DeleteUserDialog>
+                          <div className="flex items-center justify-end gap-1">
+                            <DisableUserDialog>
+                              <Button variant="ghost" size="sm" title="Disable" className="hover:bg-warning/10">
+                                <UserMinus className="size-4 text-warning" />
+                              </Button>
+                            </DisableUserDialog>
+                            <DeleteUserDialog>
+                              <Button variant="ghost" size="sm" title="Delete" className="hover:bg-destructive/10">
+                                <Trash2 className="size-4 text-destructive" />
+                              </Button>
+                            </DeleteUserDialog>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -166,24 +211,30 @@ export default function Users() {
                 </Table>
               </div>
 
-              <Separator className="my-4" />
-
-              {/* Pagination Row */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <span>Rows per page:</span>
-                  <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1) }}>
-                    <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {[10, 20, 50].map((n) => (<SelectItem key={n} value={String(n)}>{n}</SelectItem>))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center gap-4 text-sm">
-                  <span>{total === 0 ? '0–0 of 0' : `${start + 1}–${end} of ${total}`}</span>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>{'<'}</Button>
-                    <Button variant="outline" size="sm" disabled={end >= total} onClick={() => setPage((p) => p + 1)}>{'>'}</Button>
+              {/* Modern Pagination */}
+              <div className="border-t border-border/50 bg-muted/20 px-6 py-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground">Rows per page:</span>
+                    <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1) }}>
+                      <SelectTrigger className="w-20 h-9 border-2 focus:border-primary">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[10, 20, 50].map((n) => (<SelectItem key={n} value={String(n)}>{n}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-medium">{total === 0 ? '0–0 of 0' : `${start + 1}–${end} of ${total}`}</span>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="border-2">
+                        <UserMinus className="size-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" disabled={end >= total} onClick={() => setPage((p) => p + 1)} className="border-2">
+                        <Plus className="size-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -8,6 +8,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -39,127 +40,323 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
 }
 
 :root {
-  --radius: 0.75rem; /* Medical-friendly soft rounding */
+  --radius: 0.875rem; /* Softer, more modern rounding */
   
-  /* 🏥 Hospital Theme — Calm Medical Blues & Healing Greens */
+  /* 🏥 Premium Hospital Theme — Modern Medical Excellence */
   
-  /* Background & Surfaces */
-  --background: oklch(0.98 0.005 220);      /* Off-white with subtle blue */
-  --foreground: oklch(0.25 0.015 220);      /* Dark blue-gray */
-  --card: oklch(1 0 0);                     /* Pure white */
-  --card-foreground: oklch(0.25 0.015 220); /* Dark text */
+  /* Background & Surfaces with depth */
+  --background: oklch(0.99 0.003 220);      /* Ultra-light with subtle blue hint */
+  --foreground: oklch(0.20 0.020 220);      /* Rich dark blue-gray */
+  --card: oklch(1 0 0);                     /* Pure white cards */
+  --card-foreground: oklch(0.20 0.020 220);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.25 0.015 220);
+  --popover-foreground: oklch(0.20 0.020 220);
   
-  /* Primary — Medical Blue (Trust, Calm) */
-  --primary: oklch(0.58 0.14 220);          /* Soft medical blue */
-  --primary-foreground: oklch(1 0 0);       /* White */
-  --primary-light: oklch(0.75 0.10 220);    /* Light blue accent */
+  /* Primary — Modern Medical Blue (Trust, Innovation) */
+  --primary: oklch(0.55 0.16 230);          /* Vibrant medical blue */
+  --primary-foreground: oklch(1 0 0);
+  --primary-hover: oklch(0.48 0.18 230);    /* Deeper on hover */
+  --primary-light: oklch(0.88 0.08 230);    /* Light variant for backgrounds */
   
-  /* Secondary — Healing Green (Fresh, Growth) */
-  --secondary: oklch(0.88 0.05 160);        /* Soft mint green */
-  --secondary-foreground: oklch(0.25 0.04 160); /* Dark green text */
+  /* Secondary — Fresh Teal (Growth, Wellness) */
+  --secondary: oklch(0.92 0.03 180);        /* Very light teal */
+  --secondary-foreground: oklch(0.30 0.08 180);
+  --secondary-hover: oklch(0.88 0.05 180);
   
-  /* Muted — Subtle Backgrounds */
-  --muted: oklch(0.95 0.01 220);            /* Very light blue-gray */
-  --muted-foreground: oklch(0.50 0.02 220); /* Medium gray */
+  /* Muted — Sophisticated neutrals */
+  --muted: oklch(0.97 0.005 220);
+  --muted-foreground: oklch(0.48 0.015 220);
   
-  /* Accent — Calm Teal (Professional) */
-  --accent: oklch(0.70 0.10 200);           /* Calm teal */
-  --accent-foreground: oklch(0.98 0 0);     /* Near white */
+  /* Accent — Premium Purple (Premium, Professional) */
+  --accent: oklch(0.65 0.14 280);           /* Rich purple accent */
+  --accent-foreground: oklch(0.98 0 0);
+  --accent-hover: oklch(0.58 0.16 280);
   
-  /* Status Colors */
-  --success: oklch(0.65 0.15 150);          /* Medical green */
-  --warning: oklch(0.75 0.15 60);           /* Warm yellow */
-  --destructive: oklch(0.60 0.18 15);       /* Soft red */
-  --info: oklch(0.62 0.12 230);             /* Info blue */
+  /* Status Colors — Medical grade clarity */
+  --success: oklch(0.62 0.17 150);          /* Vibrant medical green */
+  --success-bg: oklch(0.95 0.05 150);       /* Light success background */
+  --warning: oklch(0.75 0.16 55);           /* Alert yellow */
+  --warning-bg: oklch(0.96 0.06 55);
+  --destructive: oklch(0.58 0.20 15);       /* Clear error red */
+  --destructive-bg: oklch(0.96 0.06 15);
+  --info: oklch(0.60 0.14 235);             /* Information blue */
+  --info-bg: oklch(0.95 0.05 235);
   
   /* Borders & Inputs */
-  --border: oklch(0.90 0.01 220);           /* Subtle border */
-  --input: oklch(0.92 0.01 220);            /* Input background */
-  --ring: oklch(0.58 0.14 220);             /* Focus ring */
+  --border: oklch(0.92 0.005 220);
+  --input: oklch(0.94 0.003 220);
+  --ring: oklch(0.55 0.16 230);
   
-  /* Charts */
-  --chart-1: oklch(0.58 0.14 220);          /* Medical blue */
-  --chart-2: oklch(0.65 0.15 150);          /* Green */
-  --chart-3: oklch(0.70 0.10 200);          /* Teal */
-  --chart-4: oklch(0.75 0.15 60);           /* Yellow */
-  --chart-5: oklch(0.62 0.12 280);          /* Purple */
+  /* Charts — Harmonious data visualization */
+  --chart-1: oklch(0.55 0.16 230);          /* Primary blue */
+  --chart-2: oklch(0.62 0.17 150);          /* Success green */
+  --chart-3: oklch(0.65 0.14 280);          /* Accent purple */
+  --chart-4: oklch(0.75 0.16 55);           /* Warning yellow */
+  --chart-5: oklch(0.60 0.15 340);          /* Pink */
   
-  /* Sidebar */
-  --sidebar: oklch(1 0 0);                  /* White sidebar */
-  --sidebar-foreground: oklch(0.25 0.015 220);
-  --sidebar-primary: oklch(0.58 0.14 220);
+  /* Sidebar — Clean, modern navigation */
+  --sidebar: oklch(0.99 0.002 220);         /* Slightly off-white */
+  --sidebar-foreground: oklch(0.25 0.020 220);
+  --sidebar-primary: oklch(0.55 0.16 230);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.96 0.01 220);   /* Subtle hover */
-  --sidebar-accent-foreground: oklch(0.25 0.015 220);
-  --sidebar-border: oklch(0.92 0.01 220);
-  --sidebar-ring: oklch(0.58 0.14 220);
+  --sidebar-accent: oklch(0.96 0.005 220);
+  --sidebar-accent-foreground: oklch(0.20 0.020 220);
+  --sidebar-border: oklch(0.94 0.003 220);
+  --sidebar-ring: oklch(0.55 0.16 230);
+  
+  /* Shadows for depth */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
 .dark {
-  /* 🌙 Dark Mode — Medical Night Shift Theme */
-  --background: oklch(0.16 0.015 220);      /* Dark blue-black */
-  --foreground: oklch(0.95 0.01 220);       /* Light text */
-  --card: oklch(0.20 0.015 220);            /* Dark card */
-  --card-foreground: oklch(0.95 0.01 220);
-  --popover: oklch(0.20 0.015 220);
-  --popover-foreground: oklch(0.95 0.01 220);
+  /* 🌙 Dark Mode — Premium Night Shift Theme */
+  --background: oklch(0.14 0.018 220);      /* Rich dark blue-black */
+  --foreground: oklch(0.96 0.008 220);      /* Crisp light text */
+  --card: oklch(0.18 0.018 220);            /* Elevated dark cards */
+  --card-foreground: oklch(0.96 0.008 220);
+  --popover: oklch(0.18 0.018 220);
+  --popover-foreground: oklch(0.96 0.008 220);
   
-  /* Primary — Lighter blue for dark bg */
-  --primary: oklch(0.75 0.12 220);          /* Light medical blue */
-  --primary-foreground: oklch(0.16 0.015 220); /* Dark text */
+  /* Primary — Luminous blue for dark backgrounds */
+  --primary: oklch(0.72 0.14 230);
+  --primary-foreground: oklch(0.14 0.018 220);
+  --primary-hover: oklch(0.78 0.16 230);
+  --primary-light: oklch(0.35 0.12 230);
   
-  /* Secondary — Muted green */
-  --secondary: oklch(0.30 0.04 160);        /* Dark mint */
-  --secondary-foreground: oklch(0.95 0.01 160);
+  /* Secondary — Muted teal */
+  --secondary: oklch(0.28 0.06 180);
+  --secondary-foreground: oklch(0.96 0.008 180);
+  --secondary-hover: oklch(0.32 0.08 180);
   
-  --muted: oklch(0.25 0.015 220);
-  --muted-foreground: oklch(0.65 0.02 220);
+  --muted: oklch(0.23 0.018 220);
+  --muted-foreground: oklch(0.68 0.015 220);
   
-  /* Accent — Bright teal */
-  --accent: oklch(0.65 0.10 200);
-  --accent-foreground: oklch(0.95 0 0);
+  /* Accent — Vibrant purple for dark mode */
+  --accent: oklch(0.68 0.15 280);
+  --accent-foreground: oklch(0.96 0 0);
+  --accent-hover: oklch(0.72 0.17 280);
   
-  /* Status */
-  --success: oklch(0.70 0.14 150);
-  --warning: oklch(0.78 0.14 60);
-  --destructive: oklch(0.65 0.17 15);
-  --info: oklch(0.68 0.12 230);
+  /* Status colors optimized for dark backgrounds */
+  --success: oklch(0.68 0.16 150);
+  --success-bg: oklch(0.25 0.08 150);
+  --warning: oklch(0.78 0.15 55);
+  --warning-bg: oklch(0.28 0.10 55);
+  --destructive: oklch(0.65 0.19 15);
+  --destructive-bg: oklch(0.28 0.10 15);
+  --info: oklch(0.68 0.13 235);
+  --info-bg: oklch(0.25 0.08 235);
   
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.75 0.12 220);
+  --border: oklch(0.25 0.015 220);
+  --input: oklch(0.20 0.018 220);
+  --ring: oklch(0.72 0.14 230);
   
-  --chart-1: oklch(0.75 0.12 220);
-  --chart-2: oklch(0.70 0.14 150);
-  --chart-3: oklch(0.65 0.10 200);
-  --chart-4: oklch(0.78 0.14 60);
-  --chart-5: oklch(0.70 0.12 280);
+  --chart-1: oklch(0.72 0.14 230);
+  --chart-2: oklch(0.68 0.16 150);
+  --chart-3: oklch(0.68 0.15 280);
+  --chart-4: oklch(0.78 0.15 55);
+  --chart-5: oklch(0.70 0.16 340);
   
-  /* Sidebar Dark */
-  --sidebar: oklch(0.20 0.015 220);
-  --sidebar-foreground: oklch(0.95 0.01 220);
-  --sidebar-primary: oklch(0.75 0.12 220);
-  --sidebar-primary-foreground: oklch(0.16 0.015 220);
-  --sidebar-accent: oklch(0.25 0.015 220);
-  --sidebar-accent-foreground: oklch(0.95 0.01 220);
-  --sidebar-border: oklch(0.25 0.015 220);
-  --sidebar-ring: oklch(0.75 0.12 220);
+  /* Sidebar Dark — Sophisticated navigation */
+  --sidebar: oklch(0.16 0.018 220);
+  --sidebar-foreground: oklch(0.96 0.008 220);
+  --sidebar-primary: oklch(0.72 0.14 230);
+  --sidebar-primary-foreground: oklch(0.14 0.018 220);
+  --sidebar-accent: oklch(0.22 0.018 220);
+  --sidebar-accent-foreground: oklch(0.96 0.008 220);
+  --sidebar-border: oklch(0.23 0.015 220);
+  --sidebar-ring: oklch(0.72 0.14 230);
+  
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  
   body {
     color: var(--foreground);
-    background:
-      radial-gradient(1200px 600px at -10% -10%, color-mix(in oklab, var(--muted) 55%, transparent) 0%, transparent 60%),
-      radial-gradient(800px 400px at 110% 10%, color-mix(in oklab, var(--accent) 18%, transparent) 0%, transparent 60%),
-      linear-gradient(180deg, color-mix(in oklab, var(--background) 92%, white) 0%, var(--background) 100%);
+    background: 
+      radial-gradient(circle at 10% 20%, color-mix(in oklab, var(--primary) 8%, transparent) 0%, transparent 50%),
+      radial-gradient(circle at 90% 80%, color-mix(in oklab, var(--accent) 6%, transparent) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 100%, color-mix(in oklab, var(--secondary) 5%, transparent) 0%, transparent 60%),
+      linear-gradient(180deg, var(--background) 0%, color-mix(in oklab, var(--background) 98%, var(--muted)) 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    letter-spacing: -0.025em;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Selection color */
+  ::selection {
+    background-color: color-mix(in oklab, var(--primary) 30%, transparent);
+    color: var(--foreground);
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--muted);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in oklab, var(--primary) 60%, var(--muted));
+    border-radius: 10px;
+    border: 2px solid var(--muted);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+  }
+}
+
+/* Custom Animations */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 40%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 20px 10px color-mix(in oklab, var(--primary) 10%, transparent);
+  }
+}
+
+@keyframes slide-in-bottom {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-right {
+  0% {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Utility Classes */
+.glass-effect {
+  background: color-mix(in oklab, var(--card) 70%, transparent);
+  backdrop-filter: blur(20px);
+  border: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
+}
+
+.gradient-border {
+  position: relative;
+  background: var(--card);
+  border-radius: var(--radius-lg);
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+  padding: 1px;
+  background: linear-gradient(135deg, var(--primary), var(--accent), var(--secondary));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--primary) 20%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-slide-in-bottom {
+  animation: slide-in-bottom 0.5s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.5s ease-out;
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
+import { Link } from "react-router-dom";
 
 import { api } from "@/lib/axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,15 +25,17 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { Label } from "@/components/ui/label";
+import { CalendarDays, CalendarCheck, Plus, Filter, Search as SearchIcon, Sparkles, Clock, User, UserRound, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
 
 /* ---------------- Types ---------------- */
 
@@ -106,62 +109,82 @@ export default function AppointmentsList() {
   /* ------------ UI ------------ */
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="size-8 rounded-md bg-primary/10" />
-          <div className="text-lg font-semibold">Appointments List</div>
+    <div className="flex flex-col gap-6 sm:gap-8 animate-slide-in-bottom">
+      {/* Enhanced Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+            <CalendarDays className="size-4 text-primary" />
+            <span className="text-sm font-medium text-primary">Appointments</span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight gradient-text">
+            Appointment Management
+          </h1>
+          <p className="text-muted-foreground text-sm md:text-base">
+            Schedule, track, and manage patient appointments
+          </p>
         </div>
-        <Avatar>
-          <AvatarFallback>U</AvatarFallback>
-        </Avatar>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div className="grid gap-3 sm:grid-cols-[200px_1fr_180px_180px_auto_auto] sm:items-end">
+      {/* Modern Filters Card */}
+      <Card className="border-2 border-border/50 shadow-lg glass-effect">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="size-5 text-primary" />
+              <CardTitle>Filters & Search</CardTitle>
+            </div>
+            <Badge variant="outline" className="px-3 py-1">{total} Total</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {/* Doctor Filter */}
-            <div>
-              <Label>Doctor</Label>
+            <div className="space-y-2">
+              <Label className="font-semibold">Doctor ID</Label>
               <Input
-                placeholder="Doctor ID (optional)"
+                placeholder="Enter Doctor ID..."
                 value={doctorId}
                 onChange={(e) => {
                   setDoctorId(e.target.value);
                   setPage(1);
                 }}
+                className="border-2 focus:border-primary transition-colors"
               />
             </div>
 
             {/* Patient Search */}
-            <div>
-              <Label>Patient</Label>
-              <Input
-                placeholder="Search patient..."
-                value={patientSearch}
-                onChange={(e) => setPatientSearch(e.target.value)}
-                onBlur={() => setPage(1)}
-              />
+            <div className="space-y-2">
+              <Label className="font-semibold">Patient Search</Label>
+              <div className="relative">
+                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search patient..."
+                  value={patientSearch}
+                  onChange={(e) => setPatientSearch(e.target.value)}
+                  onBlur={() => setPage(1)}
+                  className="pl-10 border-2 focus:border-primary transition-colors"
+                />
+              </div>
             </div>
 
             {/* Status */}
-            <div>
-              <Label>Status</Label>
+            <div className="space-y-2">
+              <Label className="font-semibold">Status</Label>
               <Select
-                value={status}
+                value={status || "all"}
                 onValueChange={(v) => {
-                  setStatus(v === status ? "" : v);
+                  setStatus(v === "all" ? "" : v);
                   setPage(1);
                 }}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="All" />
+                <SelectTrigger className="border-2 focus:border-primary">
+                  <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
                   {statusOptions.map((s) => (
-                    <SelectItem key={s} value={s}>
+                    <SelectItem key={s} value={s} className="capitalize">
                       {s}
                     </SelectItem>
                   ))}
@@ -170,8 +193,8 @@ export default function AppointmentsList() {
             </div>
 
             {/* Date */}
-            <div>
-              <Label>Date</Label>
+            <div className="space-y-2">
+              <Label className="font-semibold">Date</Label>
               <Input
                 type="date"
                 value={from}
@@ -179,135 +202,209 @@ export default function AppointmentsList() {
                   setFrom(e.target.value);
                   setPage(1);
                 }}
+                className="border-2 focus:border-primary transition-colors"
               />
             </div>
 
             {/* Timeframe */}
-            <div className="min-w-40">
-              <Label>Timeframe</Label>
+            <div className="space-y-2">
+              <Label className="font-semibold">Timeframe</Label>
               <ToggleGroup
                 type="single"
                 value={timeframe}
                 onValueChange={(v) => v && setTimeframe(v as any)}
+                className="justify-start border-2 border-border rounded-lg p-1"
               >
-                <ToggleGroupItem value="day">day</ToggleGroupItem>
-                <ToggleGroupItem value="month">month</ToggleGroupItem>
-                <ToggleGroupItem value="year">year</ToggleGroupItem>
+                <ToggleGroupItem value="day" className="capitalize">Day</ToggleGroupItem>
+                <ToggleGroupItem value="month" className="capitalize">Month</ToggleGroupItem>
+                <ToggleGroupItem value="year" className="capitalize">Year</ToggleGroupItem>
               </ToggleGroup>
             </div>
+          </div>
 
-            {/* Add New */}
-            <div className="justify-self-end">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button>+ Add New</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add Appointment (Demo)</DialogTitle>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button>Save (Demo)</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
+          {/* Add New Button */}
+          <div className="flex justify-end pt-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="size-4" />
+                  Add Appointment
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Appointment (Demo)</DialogTitle>
+                  <DialogDescription>
+                    Create a new appointment for a patient.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button>Save (Demo)</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardContent>
       </Card>
 
-      {/* Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Appointments</CardTitle>
+      {/* Modern Appointments Table */}
+      <Card className="border-2 border-border/50 shadow-lg glass-effect overflow-hidden">
+        <CardHeader className="border-b border-border/50 bg-linear-to-r from-primary/5 to-accent/5">
+          <div className="flex items-center gap-2">
+            <CalendarCheck className="size-5 text-primary" />
+            <CardTitle>Appointments List</CardTitle>
+          </div>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="p-0">
           {apptsQ.isLoading ? (
-            <div className="flex items-center gap-2">
-              <Spinner className="size-5" /> Loading…
+            <div className="flex items-center justify-center gap-3 p-12">
+              <Spinner className="size-6 text-primary" />
+              <span className="text-lg font-medium">Loading appointments...</span>
             </div>
           ) : apptsQ.error ? (
-            <div className="text-destructive">
-              {(apptsQ.error as Error).message}
+            <div className="p-12 text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-destructive/10 border border-destructive/20">
+                <XCircle className="size-5 text-destructive" />
+                <span className="text-destructive font-medium">
+                  {(apptsQ.error as Error).message}
+                </span>
+              </div>
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Patient</TableHead>
-                    <TableHead>Doctor</TableHead>
-                    <TableHead>Start</TableHead>
-                    <TableHead>End</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {paged.map((a) => (
-                    <TableRow key={a.id}>
-                      <TableCell>{a.patientName}</TableCell>
-                      <TableCell>{a.doctorName}</TableCell>
-                      <TableCell>
-                        {format(parseISO(a.startAt), "PP p")}
-                      </TableCell>
-                      <TableCell>
-                        {format(parseISO(a.endAt), "PP p")}
-                      </TableCell>
-                      <TableCell className="capitalize">{a.status}</TableCell>
-                      <TableCell>
-                        <RowActions />
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                      <TableHead className="font-bold">Patient</TableHead>
+                      <TableHead className="font-bold">Doctor</TableHead>
+                      <TableHead className="font-bold">Start Time</TableHead>
+                      <TableHead className="font-bold">End Time</TableHead>
+                      <TableHead className="font-bold">Status</TableHead>
+                      <TableHead className="font-bold text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
 
-              {/* Pagination */}
-              <div className="mt-4 flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <span>Rows per page:</span>
-                  <Select
-                    value={String(rowsPerPage)}
-                    onValueChange={(v) => {
-                      setRowsPerPage(Number(v));
-                      setPage(1);
-                    }}
-                  >
-                    <SelectTrigger className="w-20">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[10, 20, 50].map((n) => (
-                        <SelectItem key={n} value={String(n)}>
-                          {n}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  <TableBody>
+                    {paged.map((a) => (
+                      <TableRow key={a.id} className="hover:bg-primary/5 transition-colors">
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <User className="size-4 text-primary" />
+                            </div>
+                            {a.patientName}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="size-8 rounded-full bg-accent/10 flex items-center justify-center">
+                              <UserRound className="size-4 text-accent" />
+                            </div>
+                            {a.doctorName}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Clock className="size-4 text-muted-foreground" />
+                            <span className="text-sm">{format(parseISO(a.startAt), "PP p")}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Clock className="size-4 text-muted-foreground" />
+                            <span className="text-sm">{format(parseISO(a.endAt), "PP p")}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              a.status === "scheduled"
+                                ? "default"
+                                : a.status === "completed"
+                                ? "outline"
+                                : "secondary"
+                            }
+                            className="capitalize"
+                          >
+                            {a.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <RowActions />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
-                <div className="flex items-center gap-4">
-                  <span>
-                    {total ? `${start + 1}–${end} of ${total}` : "0 of 0"}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      disabled={pageSafe <= 1}
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+              {/* Modern Pagination */}
+              <div className="border-t border-border/50 bg-muted/20 px-6 py-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground">Rows per page:</span>
+                    <Select
+                      value={String(rowsPerPage)}
+                      onValueChange={(v) => {
+                        setRowsPerPage(Number(v));
+                        setPage(1);
+                      }}
                     >
-                      {"<"}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      disabled={pageSafe >= pageCount}
-                      onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                    >
-                      {">"}
-                    </Button>
+                      <SelectTrigger className="w-20 h-9 border-2 focus:border-primary">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[10, 20, 50].map((n) => (
+                          <SelectItem key={n} value={String(n)}>
+                            {n}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-medium">
+                      {total ? `${start + 1}–${end} of ${total}` : "0 of 0"}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={pageSafe <= 1}
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        className="border-2"
+                      >
+                        <ChevronLeft className="size-4" />
+                      </Button>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, pageCount) }, (_, i) => {
+                          const pageNum = i + 1;
+                          return (
+                            <Button
+                              key={pageNum}
+                              variant={pageSafe === pageNum ? "default" : "ghost"}
+                              size="sm"
+                              onClick={() => setPage(pageNum)}
+                              className="w-9"
+                            >
+                              {pageNum}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={pageSafe >= pageCount}
+                        onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                        className="border-2"
+                      >
+                        <ChevronRight className="size-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -333,6 +430,9 @@ function RowActions() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>View Appointment (Demo)</DialogTitle>
+            <DialogDescription>
+              View appointment details and information.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button>Close</Button>
@@ -349,6 +449,9 @@ function RowActions() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Appointment (Demo)</DialogTitle>
+            <DialogDescription>
+              Modify the appointment details below.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button>Save</Button>
@@ -365,6 +468,9 @@ function RowActions() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Appointment (Demo)</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this appointment? This action cannot be undone.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost">Cancel</Button>

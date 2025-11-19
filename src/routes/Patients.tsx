@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Slider } from '@/components/ui/slider'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 type Patient = {
@@ -104,59 +104,69 @@ export default function Patients() {
   }
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-6">
-      {/* Header Row */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <h1 className="text-xl font-semibold">Patient Management</h1>
-        <div className="flex items-center gap-2 sm:min-w-[420px]">
-          <Input
-            placeholder="Search patients..."
-            value={search}
-            onChange={(e) => {
-              const val = e.target.value
-              setSearch(val)
-              setPage(1)
-              updateSearchParams({
-                search: val || undefined,
-                page: 1,
-              })
-            }}
-          />
+    <div className="flex flex-col gap-6 sm:gap-8 animate-slide-in-bottom">
+      {/* Enhanced Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight gradient-text">Patient Management</h1>
+          <p className="text-muted-foreground text-sm md:text-base">
+            Manage and monitor all patient records, appointments, and medical history
+          </p>
+        </div>
+        <div className="flex items-center gap-3 sm:min-w-[480px]">
+          <div className="relative flex-1">
+            <Input
+              placeholder="Search by name, email, or ID..."
+              value={search}
+              onChange={(e) => {
+                const val = e.target.value
+                setSearch(val)
+                setPage(1)
+                updateSearchParams({
+                  search: val || undefined,
+                  page: 1,
+                })
+              }}
+              className="h-11 pl-3 pr-3 bg-background border-2 focus:border-primary transition-colors"
+            />
+          </div>
           <AddPatientDialog />
         </div>
       </div>
 
-      {/* Compact Filters */}
-      <Card>
-        <CardContent className="py-3 px-4">
-          <div className="flex flex-wrap items-end gap-4">
-            {/* Gender */}
-            <div className="flex flex-col gap-1">
-              <Label className="text-xs font-medium">Gender</Label>
+      {/* Modern Filters Card */}
+      <Card className="border-2 border-border/50 shadow-lg glass-effect">
+        <CardContent className="py-4 px-6">
+          <div className="flex flex-wrap items-end gap-6">
+            {/* Gender Filter */}
+            <div className="flex flex-col gap-2 min-w-[200px]">
+              <Label className="text-sm font-semibold flex items-center gap-2">
+                <span>Gender</span>
+              </Label>
               <RadioGroup
                 value={gender}
                 onValueChange={(v) => setGender(v as any)}
-                className="flex gap-3"
+                className="flex gap-4"
               >
-                <div className="flex items-center gap-1">
-                  <RadioGroupItem id="g-all" value="all" />
-                  <Label htmlFor="g-all" className="text-xs">All</Label>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem id="g-all" value="all" className="border-2" />
+                  <Label htmlFor="g-all" className="text-sm font-medium cursor-pointer">All</Label>
                 </div>
-                <div className="flex items-center gap-1">
-                  <RadioGroupItem id="g-female" value="female" />
-                  <Label htmlFor="g-female" className="text-xs">Female</Label>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem id="g-female" value="female" className="border-2" />
+                  <Label htmlFor="g-female" className="text-sm font-medium cursor-pointer">Female</Label>
                 </div>
-                <div className="flex items-center gap-1">
-                  <RadioGroupItem id="g-male" value="male" />
-                  <Label htmlFor="g-male" className="text-xs">Male</Label>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem id="g-male" value="male" className="border-2" />
+                  <Label htmlFor="g-male" className="text-sm font-medium cursor-pointer">Male</Label>
                 </div>
               </RadioGroup>
             </div>
 
-            {/* Age Range inline */}
-            <div className="flex flex-col gap-1 min-w-[220px]">
-              <Label className="text-xs font-medium">Age {ageRange[0]} - {ageRange[1]}</Label>
-              <div className="flex items-center gap-2">
+            {/* Age Range Filter */}
+            <div className="flex flex-col gap-2 flex-1 min-w-[280px]">
+              <Label className="text-sm font-semibold">Age Range: {ageRange[0]} - {ageRange[1]} years</Label>
+              <div className="flex items-center gap-3">
                 <Input
                   type="number"
                   value={minAgeInput}
@@ -167,7 +177,9 @@ export default function Patients() {
                       max,
                     ])
                   }
-                  className="h-8 w-16"
+                  className="h-10 w-20 text-center border-2"
+                  min="0"
+                  max="120"
                 />
                 <Slider
                   min={0}
@@ -186,102 +198,160 @@ export default function Patients() {
                       Math.max(min, Math.min(maxAgeInput, 150)),
                     ])
                   }
-                  className="h-8 w-16"
+                  className="h-10 w-20 text-center border-2"
+                  min="0"
+                  max="120"
                 />
               </div>
             </div>
 
-            <div className="ml-auto flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => {
-                // Reset filters
-                setGender('all')
-                setAgeRange([0, 120])
-                setApplied({ gender: 'all', minAge: 0, maxAge: 120 })
-                setMinAgeInput(0)
-                setMaxAgeInput(120)
-                setPage(1)
-                updateSearchParams({ gender: undefined, minAge: undefined, maxAge: undefined, page: 1 })
-              }}>Reset</Button>
-              <Button size="sm" onClick={applyFilters}>Apply</Button>
+            {/* Action Buttons */}
+            <div className="ml-auto flex gap-3">
+              <Button 
+                variant="outline" 
+                size="default" 
+                onClick={() => {
+                  setGender('all')
+                  setAgeRange([0, 120])
+                  setApplied({ gender: 'all', minAge: 0, maxAge: 120 })
+                  setMinAgeInput(0)
+                  setMaxAgeInput(120)
+                  setPage(1)
+                  updateSearchParams({ gender: undefined, minAge: undefined, maxAge: undefined, page: 1 })
+                }}
+                className="border-2"
+              >
+                Reset Filters
+              </Button>
+              <Button 
+                size="default" 
+                onClick={applyFilters}
+                className="bg-linear-to-r from-primary to-accent hover:opacity-90 transition-opacity min-w-[100px]"
+              >
+                Apply Filters
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Patients</CardTitle>
+      {/* Enhanced Table Card */}
+      <Card className="border-2 border-border/50 shadow-xl overflow-hidden">
+        <CardHeader className="border-b border-border/50 bg-muted/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl font-bold">Patient Records</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                {rows.length} {rows.length === 1 ? 'patient' : 'patients'} found
+              </p>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex items-center gap-2">
-              <Spinner className="size-5" /> Loading…
+            <div className="flex items-center justify-center gap-3 py-16">
+              <Spinner className="size-6 text-primary" />
+              <span className="text-muted-foreground">Loading patients...</span>
             </div>
           ) : error ? (
-            <div className="text-destructive">{(error as Error).message}</div>
+            <div className="text-destructive py-16 text-center">
+              <p className="font-semibold">Error loading patients</p>
+              <p className="text-sm">{(error as Error).message}</p>
+            </div>
+          ) : paged.length === 0 ? (
+            <div className="py-16 text-center">
+              <p className="text-muted-foreground">No patients found matching your filters.</p>
+            </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Gender</TableHead>
-                    <TableHead>DOB</TableHead>
-                    <TableHead>Age</TableHead>
-                    <TableHead>Registered On</TableHead>
-                    <TableHead>Appointments</TableHead>
-                    <TableHead>Prescriptions</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paged.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium">
-                        <Link to={`/patients/${p.id}`} className="text-primary hover:underline">
-                          {p.name}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="capitalize">{p.gender}</TableCell>
-                      <TableCell>{p.dateOfBirth}</TableCell>
-                      <TableCell>{p.age}</TableCell>
-                      <TableCell>{p.createdAt}</TableCell>
-                      <TableCell>{p.appointmentsCount}</TableCell>
-                      <TableCell>{p.prescriptionsCount}</TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <RowActions id={p.id} userId={p.userId} name={p.name} />
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                      <TableHead className="font-bold">Name</TableHead>
+                      <TableHead className="font-bold">Gender</TableHead>
+                      <TableHead className="font-bold">Date of Birth</TableHead>
+                      <TableHead className="font-bold">Age</TableHead>
+                      <TableHead className="font-bold">Registered On</TableHead>
+                      <TableHead className="font-bold text-center">Appointments</TableHead>
+                      <TableHead className="font-bold text-center">Prescriptions</TableHead>
+                      <TableHead className="font-bold text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paged.map((p) => (
+                      <TableRow key={p.id} className="hover:bg-muted/30 transition-colors">
+                        <TableCell className="font-medium">
+                          <Link to={`/patients/${p.id}`} className="text-primary hover:underline font-semibold flex items-center gap-2">
+                            {p.name}
+                          </Link>
+                        </TableCell>
+                        <TableCell>
+                          <span className="capitalize px-2 py-1 bg-muted rounded-md text-sm">{p.gender}</span>
+                        </TableCell>
+                        <TableCell>{p.dateOfBirth}</TableCell>
+                        <TableCell>
+                          <span className="font-semibold">{p.age}</span> years
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">{p.createdAt}</TableCell>
+                        <TableCell className="text-center">
+                          <span className="inline-flex items-center justify-center size-8 rounded-full bg-primary/10 text-primary font-semibold text-sm">
+                            {p.appointmentsCount}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className="inline-flex items-center justify-center size-8 rounded-full bg-accent/10 text-accent font-semibold text-sm">
+                            {p.prescriptionsCount}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <RowActions id={p.id} userId={p.userId} name={p.name} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
-              {/* Pagination */}
-              <div className="mt-4 flex items-center justify-between text-sm">
-                <div>Page {pageSafe} of {pageCount}</div>
+              {/* Modern Pagination */}
+              <div className="border-t border-border/50 bg-muted/20 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing <span className="font-semibold text-foreground">{(pageSafe - 1) * pageSize + 1}</span> to{' '}
+                  <span className="font-semibold text-foreground">{Math.min(pageSafe * pageSize, rows.length)}</span> of{' '}
+                  <span className="font-semibold text-foreground">{rows.length}</span> patients
+                </div>
                 <div className="flex items-center gap-2">
                   <Button
-                    variant="ghost"
+                    variant="outline"
+                    size="sm"
                     disabled={pageSafe <= 1}
                     onClick={() => {
                       const next = Math.max(1, pageSafe - 1)
                       setPage(next)
                       updateSearchParams({ page: next })
                     }}
+                    className="border-2"
                   >
-                    Prev
+                    ← Previous
                   </Button>
+                  <div className="flex items-center gap-1">
+                    <span className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md font-semibold text-sm">
+                      {pageSafe}
+                    </span>
+                    <span className="text-muted-foreground text-sm">of {pageCount}</span>
+                  </div>
                   <Button
-                    variant="ghost"
+                    variant="outline"
+                    size="sm"
                     disabled={pageSafe >= pageCount}
                     onClick={() => {
                       const next = Math.min(pageCount, pageSafe + 1)
                       setPage(next)
                       updateSearchParams({ page: next })
                     }}
+                    className="border-2"
                   >
-                    Next
+                    Next →
                   </Button>
                 </div>
               </div>
@@ -362,6 +432,9 @@ function AddPatientDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add Patient</DialogTitle>
+          <DialogDescription>
+            Register a new patient in the hospital system.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={onSubmit} className="grid gap-4">

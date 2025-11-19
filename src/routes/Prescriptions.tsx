@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfToday, subDays, startOfMonth } from "date-fns";
-import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, Trash2, FileText, Filter, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { api } from "@/lib/axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -14,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -30,7 +32,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 
 /* ---------------- Types based ONLY on API response ---------------- */
@@ -151,48 +152,57 @@ export default function Prescriptions() {
   }
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-6">
-      {/* Header */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl sm:text-2xl">
+    <div className="flex flex-col gap-6 sm:gap-8 animate-slide-in-bottom">
+      {/* Enhanced Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+            <FileText className="size-4 text-primary" />
+            <span className="text-sm font-medium text-primary">Medical Records</span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight gradient-text">
             Prescription Management
-          </CardTitle>
-        </CardHeader>
-      </Card>
+          </h1>
+          <p className="text-muted-foreground text-sm md:text-base">
+            View, manage, and track patient prescriptions
+          </p>
+        </div>
+      </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">
-                Patient Name
-              </div>
+      {/* Modern Filters Card */}
+      <Card className="border-2 border-border/50 shadow-lg glass-effect">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Filter className="size-5 text-primary" />
+            <CardTitle>Filters & Search</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-2">
+              <Label className="font-semibold">Patient Name</Label>
               <Input
                 placeholder="Search patient..."
                 value={patientSearch}
                 onChange={(e) => setPatientSearch(e.target.value)}
+                className="border-2 focus:border-primary"
               />
             </div>
 
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">
-                Doctor Name
-              </div>
+            <div className="space-y-2">
+              <Label className="font-semibold">Doctor Name</Label>
               <Input
                 placeholder="Search doctor..."
                 value={doctorSearch}
                 onChange={(e) => setDoctorSearch(e.target.value)}
+                className="border-2 focus:border-primary"
               />
             </div>
 
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">
-                Date Range
-              </div>
+            <div className="space-y-2">
+              <Label className="font-semibold">Date Range</Label>
               <Select value={range} onValueChange={(v) => setRange(v)}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="border-2 focus:border-primary">
                   <SelectValue placeholder="Select Range" />
                 </SelectTrigger>
                 <SelectContent>
@@ -207,122 +217,159 @@ export default function Prescriptions() {
           </div>
 
           {/* Date inputs */}
-          <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto] items-end">
-            <Input
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-            />
-            <Input
-              type="date"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-            />
-            <Button onClick={applyFilters}>Apply</Button>
+          <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto_auto] items-end">
+            <div className="space-y-2">
+              <Label className="font-semibold">From Date</Label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  type="date"
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                  className="pl-10 border-2 focus:border-primary"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold">To Date</Label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  type="date"
+                  value={to}
+                  onChange={(e) => setTo(e.target.value)}
+                  className="pl-10 border-2 focus:border-primary"
+                />
+              </div>
+            </div>
+            <Button onClick={applyFilters} variant="default">Apply</Button>
             <Button variant="outline" onClick={clearFilters}>
               Clear
             </Button>
           </div>
 
           {/* Add New */}
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="mr-2 size-4" /> Add Prescription
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create Prescription (Demo)</DialogTitle>
-              </DialogHeader>
-              <p className="text-sm text-muted-foreground">
-                Add form goes here.
-              </p>
-              <DialogFooter>
-                <Button>Create (Demo)</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <div className="flex justify-end pt-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="size-4" />
+                  Add Prescription
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create Prescription (Demo)</DialogTitle>
+                </DialogHeader>
+                <p className="text-sm text-muted-foreground">
+                  Add form goes here.
+                </p>
+                <DialogFooter>
+                  <Button>Create (Demo)</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Table */}
-      <Card>
-        <CardContent className="pt-6">
+      {/* Modern Prescriptions Table */}
+      <Card className="border-2 border-border/50 shadow-lg glass-effect overflow-hidden">
+        <CardHeader className="border-b border-border/50 bg-linear-to-r from-primary/5 to-accent/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="size-5 text-primary" />
+              <CardTitle>Prescriptions List</CardTitle>
+            </div>
+            <Badge variant="outline" className="px-3 py-1">{total} Total</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
           {prescriptionsQ.isLoading ? (
-            <div className="flex justify-center p-10">
-              <Spinner className="size-6" />
+            <div className="flex items-center justify-center gap-3 p-12">
+              <Spinner className="size-6 text-primary" />
+              <span className="text-lg font-medium">Loading prescriptions...</span>
             </div>
           ) : prescriptionsQ.error ? (
-            <div className="text-destructive">
-              {(prescriptionsQ.error as Error).message}
+            <div className="p-12 text-center">
+              <div className="text-destructive font-medium">
+                {(prescriptionsQ.error as Error).message}
+              </div>
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Patient</TableHead>
-                    <TableHead>Doctor</TableHead>
-                    <TableHead>Diagnosis</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {pageRows.map((rx) => (
-                    <TableRow key={rx.id}>
-                      <TableCell>{rx.id}</TableCell>
-                      <TableCell>{rx.patientName ?? "-"}</TableCell>
-                      <TableCell>{rx.doctorName ?? "-"}</TableCell>
-                      <TableCell>{rx.diagnosis ?? ""}</TableCell>
-                      <TableCell>
-                        {format(new Date(rx.date), "PP")}
-                      </TableCell>
-                      <TableCell className="text-right space-x-1">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="size-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Pencil className="size-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                      <TableHead className="font-bold">ID</TableHead>
+                      <TableHead className="font-bold">Patient</TableHead>
+                      <TableHead className="font-bold">Doctor</TableHead>
+                      <TableHead className="font-bold">Diagnosis</TableHead>
+                      <TableHead className="font-bold">Date</TableHead>
+                      <TableHead className="text-right font-bold">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
 
-              <Separator className="my-4" />
+                  <TableBody>
+                    {pageRows.map((rx) => (
+                      <TableRow key={rx.id} className="hover:bg-primary/5 transition-colors">
+                        <TableCell className="font-mono text-muted-foreground">{rx.id}</TableCell>
+                        <TableCell className="font-semibold">{rx.patientName ?? "-"}</TableCell>
+                        <TableCell>{rx.doctorName ?? "-"}</TableCell>
+                        <TableCell className="max-w-xs truncate">{rx.diagnosis ?? "-"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {format(new Date(rx.date), "PP")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="sm" className="hover:bg-primary/10">
+                              <Eye className="size-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="hover:bg-accent/10">
+                              <Pencil className="size-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="hover:bg-destructive/10">
+                              <Trash2 className="size-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
-              {/* Pagination */}
-              <div className="flex items-center justify-between">
-                <div>
-                  Showing {total === 0 ? 0 : start + 1} to {end} of {total}{" "}
-                  entries
-                </div>
+              {/* Modern Pagination */}
+              <div className="border-t border-border/50 bg-muted/20 px-6 py-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <span className="text-sm font-medium">
+                    Showing {total === 0 ? 0 : start + 1} to {end} of {total} entries
+                  </span>
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page === 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  >
-                    {"<"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={end >= total}
-                    onClick={() => setPage((p) => p + 1)}
-                  >
-                    {">"}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page === 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      className="border-2"
+                    >
+                      <ChevronLeft className="size-4" />
+                    </Button>
+                    <span className="text-sm px-3">Page {page}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={end >= total}
+                      onClick={() => setPage((p) => p + 1)}
+                      className="border-2"
+                    >
+                      <ChevronRight className="size-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </>

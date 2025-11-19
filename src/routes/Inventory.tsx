@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Table,
   TableHeader,
@@ -21,12 +22,13 @@ import {
   Dialog,
   DialogTrigger,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
 
-import { Separator } from "@/components/ui/separator";
+import { Package, Search, Plus, Filter, AlertCircle, Calendar, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 
 /* ---------------- Types ---------------- */
 
@@ -114,175 +116,235 @@ export default function InventoryManagement() {
   const allowed = user?.role === "admin" || user?.role === "pharmacist" || user?.role === "inventory";
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header Container */}
-      <Card className="rounded-xl shadow-md">
-        <CardHeader className="pb-0">
-          <CardTitle className="text-xl sm:text-2xl">
+    <div className="flex flex-col gap-6 sm:gap-8 animate-slide-in-bottom">
+      {/* Enhanced Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+            <Package className="size-4 text-primary" />
+            <span className="text-sm font-medium text-primary">Stock Management</span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight gradient-text">
             Inventory Management
-          </CardTitle>
-        </CardHeader>
+          </h1>
+          <p className="text-muted-foreground text-sm md:text-base">
+            Track medicines, equipment, and supplies
+          </p>
+        </div>
+      </div>
 
-        <CardContent className="pt-4 pb-6 space-y-4">
-          {!allowed && (
-            <div className="text-sm text-destructive">
-              You do not have access to view inventory. (Allowed: admin, pharmacist, inventory)
+      {!allowed && (
+        <Card className="border-2 border-destructive/50 bg-destructive/5">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="size-5" />
+              <span className="font-medium">You do not have access to view inventory. (Allowed: admin, pharmacist, inventory)</span>
             </div>
-          )}
-          {/* Top Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
-            {/* Search */}
-            <Input
-              className="max-w-xs"
-              placeholder="Search by Name…"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-            />
+          </CardContent>
+        </Card>
+      )}
 
-            <div className="flex gap-2">
+      {/* Modern Filters Card */}
+      <Card className="border-2 border-border/50 shadow-lg glass-effect">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Filter className="size-5 text-primary" />
+            <CardTitle>Filters & Actions</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
+            {/* Search */}
+            <div className="relative w-full sm:max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                className="pl-10 border-2 focus:border-primary transition-colors"
+                placeholder="Search by Name…"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-2">
               {/* Low Stock */}
               <Badge
-                className={`cursor-pointer px-3 py-1 ${
-                  lowStock ? "bg-green-700 text-white" : "bg-green-200"
+                className={`cursor-pointer px-3 py-1.5 ${
+                  lowStock ? "bg-warning text-warning-foreground hover:bg-warning/90" : "bg-muted hover:bg-muted/80"
                 }`}
                 onClick={toggleLowStock}
               >
-                Low Stock {lowStock ? `<${lowStock}` : ""}
+                {lowStock ? `Low Stock <${lowStock}` : "All Stock"}
               </Badge>
 
               {/* Type */}
-              <Badge className="cursor-pointer bg-blue-200 px-3 py-1" onClick={cycleType}>
+              <Badge 
+                className="cursor-pointer bg-accent text-accent-foreground hover:bg-accent/90 px-3 py-1.5 capitalize" 
+                onClick={cycleType}
+              >
                 Type: {typeFilter}
               </Badge>
 
               {/* Expiry Filter */}
               <Badge
-                className="cursor-pointer bg-yellow-200 px-3 py-1"
+                className={`cursor-pointer px-3 py-1.5 gap-1.5 ${
+                  expiryBefore ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : "bg-muted hover:bg-muted/80"
+                }`}
                 onClick={toggleExpiry}
               >
-                Expiry: {expiryBefore ? `Before ${expiryBefore}` : "All"}
+                <Calendar className="size-3" />
+                {expiryBefore ? `Expires before ${expiryBefore}` : "All Expiry"}
               </Badge>
             </div>
           </div>
 
           {/* Add New Item */}
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="bg-blue-600 text-white">+ Add Inventory Item</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Inventory Item (Demo)</DialogTitle>
-              </DialogHeader>
-              <p className="text-sm text-muted-foreground">
-                Placeholder form here…
-              </p>
-              <DialogFooter>
-                <Button>Create (Demo)</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <div className="flex justify-end">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="size-4" />
+                  Add Inventory Item
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Inventory Item (Demo)</DialogTitle>
+                  <DialogDescription>
+                    Add a new item to the hospital inventory.
+                  </DialogDescription>
+                </DialogHeader>
+                <p className="text-sm text-muted-foreground">
+                  Placeholder form here…
+                </p>
+                <DialogFooter>
+                  <Button>Create (Demo)</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Inventory Table */}
-      <Card>
-        <CardContent className="pt-6">
+      {/* Modern Inventory Table */}
+      <Card className="border-2 border-border/50 shadow-lg glass-effect overflow-hidden">
+        <CardHeader className="border-b border-border/50 bg-linear-to-r from-primary/5 to-accent/5">
+          <div className="flex items-center gap-2">
+            <Package className="size-5 text-primary" />
+            <CardTitle>Inventory Items</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
           {isLoading ? (
-            <div className="text-center py-8">Loading…</div>
+            <div className="flex items-center justify-center gap-3 p-12">
+              <Spinner className="size-6 text-primary" />
+              <span className="text-lg font-medium">Loading inventory...</span>
+            </div>
           ) : error ? (
-            <div className="text-destructive py-4">
-              {(error as Error).message}
+            <div className="p-12 text-center">
+              <div className="text-destructive font-medium">
+                {(error as Error).message}
+              </div>
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Quantity</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Expiry</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                      <TableHead className="font-bold">Name</TableHead>
+                      <TableHead className="font-bold">Quantity</TableHead>
+                      <TableHead className="font-bold">Unit</TableHead>
+                      <TableHead className="font-bold">Expiry</TableHead>
+                      <TableHead className="text-right font-bold">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
 
-                <TableBody>
-                  {rows.map((item, idx) => {
-                    let expired = false;
-                    try {
-                      expired = !!(item.expiry && isBefore(parseISO(item.expiry), today));
-                    } catch {
-                      expired = false;
-                    }
+                  <TableBody>
+                    {rows.map((item, idx) => {
+                      let expired = false;
+                      try {
+                        expired = !!(item.expiry && isBefore(parseISO(item.expiry), today));
+                      } catch {
+                        expired = false;
+                      }
 
-                    return (
-                      <TableRow
-                        key={idx}
-                        className={expired ? "bg-red-100" : ""}
-                      >
-                        <TableCell>{item.name}</TableCell>
-
-                        <TableCell
-                          className={
-                            item.quantity === 0
-                              ? "text-red-600 font-semibold"
-                              : ""
-                          }
+                      return (
+                        <TableRow
+                          key={idx}
+                          className={`transition-colors ${
+                            expired ? "bg-destructive/10 hover:bg-destructive/20" : "hover:bg-primary/5"
+                          }`}
                         >
-                          {item.quantity}
-                        </TableCell>
+                          <TableCell className="font-medium">{item.name}</TableCell>
 
-                        <TableCell>{item.unit ?? "N/A"}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={item.quantity === 0 ? "destructive" : item.quantity < 20 ? "outline" : "secondary"}
+                              className="font-semibold"
+                            >
+                              {item.quantity}
+                            </Badge>
+                          </TableCell>
 
-                        <TableCell>
-                          {item.expiry
-                            ? format(parseISO(item.expiry), "yyyy-MM-dd")
-                            : "N/A"}
-                        </TableCell>
+                          <TableCell className="text-muted-foreground">{item.unit ?? "N/A"}</TableCell>
 
-                        <TableCell>
-                          <Button variant="ghost" className="text-red-500">
-                            Delete
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                          <TableCell>
+                            {item.expiry ? (
+                              <div className={`flex items-center gap-2 ${expired ? 'text-destructive font-semibold' : ''}`}>
+                                <Calendar className="size-4" />
+                                <span>{format(parseISO(item.expiry), "yyyy-MM-dd")}</span>
+                                {expired && <AlertCircle className="size-4" />}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">N/A</span>
+                            )}
+                          </TableCell>
 
-              <Separator className="my-4" />
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
 
-              {/* Pagination */}
-              <div className="flex items-center justify-between text-sm">
-                <span>
-                  {total
-                    ? `Rows per page: ${pageSize} | ${start + 1}-${end} of ${total}`
-                    : "No items"}
-                </span>
+              {/* Modern Pagination */}
+              <div className="border-t border-border/50 bg-muted/20 px-6 py-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <span className="text-sm font-medium">
+                    {total
+                      ? `Showing ${start + 1}–${end} of ${total} items`
+                      : "No items"}
+                  </span>
 
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page === 1}
-                    onClick={() => setPage(page - 1)}
-                  >
-                    {"<"}
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={end >= total}
-                    onClick={() => setPage(page + 1)}
-                  >
-                    {">"}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page === 1}
+                      onClick={() => setPage(page - 1)}
+                      className="border-2"
+                    >
+                      <ChevronLeft className="size-4" />
+                    </Button>
+                    <span className="text-sm px-3">Page {page}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={end >= total}
+                      onClick={() => setPage(page + 1)}
+                      className="border-2"
+                    >
+                      <ChevronRight className="size-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </>

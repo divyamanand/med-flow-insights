@@ -5,10 +5,14 @@ import { format, parseISO } from "date-fns";
 import { api } from "@/lib/axios";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Spinner } from "@/components/ui/spinner";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from "@/components/ui/table";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ArrowDownToLine, Filter, Calendar, Package, TrendingUp, TrendingDown, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 
 type InventoryTx = {
   id: string;
@@ -89,27 +93,39 @@ export default function InventoryTransactions() {
 
   /* ---------------------- UI ---------------------- */
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 sm:gap-8 animate-slide-in-bottom">
+      {/* Enhanced Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+            <Package className="size-4 text-primary" />
+            <span className="text-sm font-medium text-primary">Transaction History</span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight gradient-text">
+            Inventory Transactions
+          </h1>
+          <p className="text-muted-foreground text-sm md:text-base">
+            Track all inventory movements and adjustments
+          </p>
+        </div>
+      </div>
 
-      {/* HEADER */}
-      <Card>
+      {/* Modern Filters Card */}
+      <Card className="border-2 border-border/50 shadow-lg glass-effect">
         <CardHeader>
-          <CardTitle className="text-xl sm:text-2xl">Inventory Transactions</CardTitle>
+          <div className="flex items-center gap-2">
+            <Filter className="size-5 text-primary" />
+            <CardTitle>Filters & Actions</CardTitle>
+          </div>
         </CardHeader>
-      </Card>
-
-      {/* FILTERS */}
-      <Card>
-        <CardContent className="pt-6 space-y-4">
-
+        <CardContent className="space-y-4">
           {/* Row 1: Item + Type */}
-          <div className="flex flex-wrap gap-4">
-
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {/* Item Filter */}
-            <div className="min-w-[220px]">
-              <label className="text-xs text-muted-foreground">Item</label>
+            <div className="space-y-2">
+              <Label className="font-semibold">Item</Label>
               <Select value={itemId} onValueChange={(v) => { setItemId(v); setPage(1) }}>
-                <SelectTrigger>
+                <SelectTrigger className="border-2 focus:border-primary">
                   <SelectValue placeholder="Select Item" />
                 </SelectTrigger>
                 <SelectContent>
@@ -124,80 +140,131 @@ export default function InventoryTransactions() {
             </div>
 
             {/* Type Filter */}
-            <div className="min-w-[150px]">
-              <label className="text-xs text-muted-foreground">Type</label>
+            <div className="space-y-2">
+              <Label className="font-semibold">Transaction Type</Label>
               <Select value={type} onValueChange={(v) => { setType(v); setPage(1); }}>
-                <SelectTrigger>
+                <SelectTrigger className="border-2 focus:border-primary">
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="in">In</SelectItem>
-                  <SelectItem value="out">Out</SelectItem>
-                  <SelectItem value="adjust">Adjust</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="in">Stock In</SelectItem>
+                  <SelectItem value="out">Stock Out</SelectItem>
+                  <SelectItem value="adjust">Adjustment</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-          </div>
-
-          {/* Row 2: Dates */}
-          <div className="flex flex-wrap gap-4">
-
-            <div>
-              <label className="text-xs text-muted-foreground">From</label>
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+            {/* From Date */}
+            <div className="space-y-2">
+              <Label className="font-semibold">From Date</Label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input 
+                  type="date" 
+                  value={from} 
+                  onChange={(e) => setFrom(e.target.value)} 
+                  className="pl-10 border-2 focus:border-primary"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="text-xs text-muted-foreground">To</label>
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            {/* To Date */}
+            <div className="space-y-2">
+              <Label className="font-semibold">To Date</Label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input 
+                  type="date" 
+                  value={to} 
+                  onChange={(e) => setTo(e.target.value)}
+                  className="pl-10 border-2 focus:border-primary"
+                />
+              </div>
             </div>
-
-            <Button onClick={() => transactionsQ.refetch()}>Apply Filters</Button>
           </div>
 
-          {/* Export */}
-          <Button className="bg-blue-600 text-white" onClick={exportCSV}>
-            Export to CSV
-          </Button>
-
+          {/* Actions Row */}
+          <div className="flex flex-wrap gap-3 justify-between items-center pt-2">
+            <Button onClick={() => transactionsQ.refetch()} variant="outline">
+              Apply Filters
+            </Button>
+            <Button className="gap-2" onClick={exportCSV}>
+              <ArrowDownToLine className="size-4" />
+              Export to CSV
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      {/* TABLE */}
-      <Card>
-        <CardContent className="pt-6">
+      {/* Modern Transactions Table */}
+      <Card className="border-2 border-border/50 shadow-lg glass-effect overflow-hidden">
+        <CardHeader className="border-b border-border/50 bg-linear-to-r from-primary/5 to-accent/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Package className="size-5 text-primary" />
+              <CardTitle>Transaction History</CardTitle>
+            </div>
+            <Badge variant="outline" className="px-3 py-1">{total} Records</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
           {transactionsQ.isLoading ? (
-            <div className="p-8 text-center">Loading…</div>
+            <div className="flex items-center justify-center gap-3 p-12">
+              <Spinner className="size-6 text-primary" />
+              <span className="text-lg font-medium">Loading transactions...</span>
+            </div>
           ) : (
             <>
-              <div className="w-full overflow-auto">
+              <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Item Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Adjust</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Created At</TableHead>
-                      <TableHead>View</TableHead>
+                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                      <TableHead className="font-bold">ID</TableHead>
+                      <TableHead className="font-bold">Item Name</TableHead>
+                      <TableHead className="font-bold">Type</TableHead>
+                      <TableHead className="font-bold">Quantity</TableHead>
+                      <TableHead className="font-bold">Reason</TableHead>
+                      <TableHead className="font-bold">Created At</TableHead>
+                      <TableHead className="text-right font-bold">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
 
                   <TableBody>
                     {paged.map((tx) => (
-                      <TableRow key={tx.id}>
-                        <TableCell>{tx.id}</TableCell>
-                        <TableCell>{tx.inventoryItem.name}</TableCell>
-                        <TableCell className="capitalize">{tx.type}</TableCell>
-                        <TableCell>{tx.quantity}</TableCell>
-                        <TableCell>{tx.reason || "-"}</TableCell>
-                        <TableCell>{format(parseISO(tx.createdAt), "yyyy-MM-dd hh:mm a")}</TableCell>
+                      <TableRow key={tx.id} className="hover:bg-primary/5 transition-colors">
+                        <TableCell className="font-mono text-muted-foreground">{tx.id}</TableCell>
+                        <TableCell className="font-semibold">{tx.inventoryItem.name}</TableCell>
                         <TableCell>
+                          <Badge
+                            variant={
+                              tx.type === "in"
+                                ? "default"
+                                : tx.type === "out"
+                                ? "outline"
+                                : "secondary"
+                            }
+                            className="gap-1.5 capitalize"
+                          >
+                            {tx.type === "in" && <TrendingUp className="size-3" />}
+                            {tx.type === "out" && <TrendingDown className="size-3" />}
+                            {tx.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{tx.quantity}</Badge>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
+                          {tx.reason || "-"}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {format(parseISO(tx.createdAt), "yyyy-MM-dd hh:mm a")}
+                        </TableCell>
+                        <TableCell className="text-right">
                           <TxViewDialog tx={tx}>
-                            <Button size="sm" className="bg-blue-500 text-white">View</Button>
+                            <Button variant="ghost" size="sm" className="hover:bg-primary/10">
+                              <Eye className="size-4" />
+                            </Button>
                           </TxViewDialog>
                         </TableCell>
                       </TableRow>
@@ -206,19 +273,34 @@ export default function InventoryTransactions() {
                 </Table>
               </div>
 
-              {/* Pagination */}
-              <div className="flex items-center justify-between mt-4">
-                <span className="text-sm">
-                  {total ? `${start + 1}-${end} of ${total}` : "No records"}
-                </span>
+              {/* Modern Pagination */}
+              <div className="border-t border-border/50 bg-muted/20 px-6 py-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <span className="text-sm font-medium">
+                    {total ? `${start + 1}-${end} of ${total}` : "No records"}
+                  </span>
 
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-                    Previous
-                  </Button>
-                  <Button size="sm" variant="outline" disabled={end >= total} onClick={() => setPage((p) => p + 1)}>
-                    Next
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      disabled={page === 1} 
+                      onClick={() => setPage((p) => p - 1)}
+                      className="border-2"
+                    >
+                      <ChevronLeft className="size-4" />
+                    </Button>
+                    <span className="text-sm px-3">Page {page}</span>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      disabled={end >= total} 
+                      onClick={() => setPage((p) => p + 1)}
+                      className="border-2"
+                    >
+                      <ChevronRight className="size-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </>
