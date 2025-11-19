@@ -9,10 +9,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Spinner } from '@/components/ui/spinner'
+import { Users, Filter, Search, Plus, Eye, Edit2, ChevronLeft, ChevronRight, UserPlus } from 'lucide-react'
 
 type Staff = {
   id: string
@@ -116,27 +117,45 @@ export default function StaffDirectory() {
   const paged = filtered.slice((pageSafe - 1) * pageSize, pageSafe * pageSize)
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-6">
-      {/* Header Row */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Staff Directory</h1>
-        <AddStaffDialog />
+    <div className="flex flex-col gap-6 sm:gap-8 animate-slide-in-bottom">
+      {/* Enhanced Header */}
+      <div className="space-y-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+          <Users className="size-4 text-primary" />
+          <span className="text-sm font-medium text-primary">Staff Management</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight gradient-text">
+            Staff Directory
+          </h1>
+          <AddStaffDialog />
+        </div>
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="border-2 border-border/50 shadow-lg glass-effect">
+        <CardHeader className="border-b border-border/50 bg-linear-to-r from-primary/5 to-accent/5">
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="size-5 text-primary" />
+            Search & Filters
+          </CardTitle>
+        </CardHeader>
         <CardContent className="pt-6">
-          <div className="grid gap-3 sm:grid-cols-[1fr_200px_200px]">
-            <Input
-              placeholder="Search by name"
-              value={search}
-              onChange={(e) => {
-                const val = e.target.value
-                setSearch(val)
-                setPage(1)
-                updateSearchParams({ search: val || undefined, page: 1 })
-              }}
-            />
+          <div className="grid gap-4 sm:grid-cols-[1fr_200px_200px]">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name"
+                value={search}
+                onChange={(e) => {
+                  const val = e.target.value
+                  setSearch(val)
+                  setPage(1)
+                  updateSearchParams({ search: val || undefined, page: 1 })
+                }}
+                className="pl-10 border-2"
+              />
+            </div>
 
             <Select
               value={role}
@@ -147,12 +166,12 @@ export default function StaffDirectory() {
                 updateSearchParams({ role: next || undefined, page: 1 })
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger className="border-2">
                 <SelectValue placeholder="Role" />
               </SelectTrigger>
               <SelectContent>
                 {roleOptions.map((r) => (
-                  <SelectItem key={r} value={r}>
+                  <SelectItem key={r} value={r} className="capitalize">
                     {r}
                   </SelectItem>
                 ))}
@@ -168,7 +187,7 @@ export default function StaffDirectory() {
                 updateSearchParams({ specialtyId: next || undefined, page: 1 })
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger className="border-2">
                 <SelectValue placeholder="Specialty" />
               </SelectTrigger>
               <SelectContent>
@@ -180,8 +199,8 @@ export default function StaffDirectory() {
               </SelectContent>
             </Select>
           </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-4">
-            <div className="flex items-center gap-2">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
               <Switch
                 checked={isAvailable}
                 onCheckedChange={(ck) => {
@@ -191,9 +210,9 @@ export default function StaffDirectory() {
                 }}
                 id="flt-available"
               />
-              <Label htmlFor="flt-available" className="text-sm">Available</Label>
+              <Label htmlFor="flt-available" className="text-sm font-medium cursor-pointer">Available Now</Label>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
               <Switch
                 checked={onLeave}
                 onCheckedChange={(ck) => {
@@ -203,123 +222,150 @@ export default function StaffDirectory() {
                 }}
                 id="flt-onleave"
               />
-              <Label htmlFor="flt-onleave" className="text-sm">On Leave</Label>
+              <Label htmlFor="flt-onleave" className="text-sm font-medium cursor-pointer">On Leave</Label>
             </div>
           </div>
-          <div className="mt-2 text-xs text-muted-foreground">Filters</div>
         </CardContent>
       </Card>
 
       {/* Staff Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Staff</CardTitle>
+      <Card className="border-2 border-border/50 shadow-lg glass-effect">
+        <CardHeader className="border-b border-border/50 bg-linear-to-r from-primary/5 to-accent/5">
+          <CardTitle className="flex items-center gap-2">
+            <Users className="size-5 text-primary" />
+            Staff Members ({filtered.length})
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {staffQuery.isLoading ? (
-            <div className="flex items-center gap-2">
-              <Spinner className="size-5" /> Loading…
+            <div className="flex items-center gap-2 justify-center py-8">
+              <Spinner className="size-5" /> Loading staff directory...
             </div>
           ) : staffQuery.error ? (
-            <div className="text-destructive">
+            <div className="text-destructive text-center py-8">
               {(staffQuery.error as Error).message}
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Specialties</TableHead>
-                    <TableHead>Notes</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {paged.map((s) => (
-                    <TableRow key={s.id}>
-                      <TableCell className="font-medium">
-                        <Link to={`/staff/${s.id}`} className="text-primary hover:underline">
-                          {s.name}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="capitalize">{s.role}</TableCell>
-                      <TableCell>{s.phone ?? '-'}</TableCell>
-                      <TableCell>{s.email ?? '-'}</TableCell>
-
-                      <TableCell className="max-w-60">
-                        <div className="flex flex-wrap gap-1">
-                          {(s.specialties ?? []).map((sp) => (
-                            <Badge key={sp.id} variant="secondary">
-                              {sp.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="truncate max-w-40">
-                        {s.notes ?? '-'}
-                      </TableCell>
-
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <ViewStaffDialog staff={s} />
-                          <EditStaffDialog staff={s} />
-                        </div>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b-2 border-border/50 hover:bg-transparent">
+                      <TableHead className="font-semibold">Name</TableHead>
+                      <TableHead className="font-semibold">Role</TableHead>
+                      <TableHead className="font-semibold">Phone</TableHead>
+                      <TableHead className="font-semibold">Email</TableHead>
+                      <TableHead className="font-semibold">Specialties</TableHead>
+                      <TableHead className="font-semibold">Notes</TableHead>
+                      <TableHead className="font-semibold">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+
+                  <TableBody>
+                    {paged.map((s) => (
+                      <TableRow key={s.id} className="hover:bg-muted/50 transition-colors">
+                        <TableCell className="font-medium">
+                          <Link to={`/staff/${s.id}`} className="text-primary hover:underline flex items-center gap-2">
+                            <Users className="size-4" />
+                            {s.name}
+                          </Link>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="capitalize">{s.role}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">{s.phone ?? '-'}</TableCell>
+                        <TableCell className="text-sm">{s.email ?? '-'}</TableCell>
+
+                        <TableCell className="max-w-60">
+                          <div className="flex flex-wrap gap-1">
+                            {(s.specialties ?? []).map((sp) => (
+                              <Badge key={sp.id} variant="outline" className="text-xs">
+                                {sp.name}
+                              </Badge>
+                            ))}
+                            {(s.specialties ?? []).length === 0 && (
+                              <span className="text-muted-foreground text-xs">None</span>
+                            )}
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="truncate max-w-40 text-sm text-muted-foreground">
+                          {s.notes ?? '-'}
+                        </TableCell>
+
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <ViewStaffDialog staff={s} />
+                            <EditStaffDialog staff={s} />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {paged.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                          No staff members found. Try adjusting your filters.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
 
               {/* Pagination */}
-              <div className="mt-4 flex items-center justify-between">
+              <div className="mt-6 flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Showing {paged.length === 0 ? 0 : (pageSafe - 1) * pageSize + 1} to {Math.min(pageSafe * pageSize, filtered.length)} of {filtered.length} results
+                </div>
+
                 <div className="flex items-center gap-2">
                   <Button
-                    variant="ghost"
+                    variant="outline"
+                    size="sm"
                     disabled={pageSafe <= 1}
                     onClick={() => {
                       const next = Math.max(1, pageSafe - 1)
                       setPage(next)
                       updateSearchParams({ page: next })
                     }}
+                    className="gap-1"
                   >
+                    <ChevronLeft className="size-4" />
                     Previous
                   </Button>
 
-                  {Array.from({ length: pageCount }, (_, i) => i + 1)
-                    .slice(0, 5)
-                    .map((n) => (
-                      <Button
-                        key={n}
-                        variant={n === pageSafe ? 'default' : 'ghost'}
-                        onClick={() => {
-                          setPage(n)
-                          updateSearchParams({ page: n })
-                        }}
-                      >
-                        {n}
-                      </Button>
-                    ))}
+                  {Array.from({ length: Math.min(pageCount, 5) }, (_, i) => i + 1).map((n) => (
+                    <Button
+                      key={n}
+                      size="sm"
+                      variant={n === pageSafe ? 'default' : 'outline'}
+                      onClick={() => {
+                        setPage(n)
+                        updateSearchParams({ page: n })
+                      }}
+                      className="w-10"
+                    >
+                      {n}
+                    </Button>
+                  ))}
 
-                  {pageCount > 5 ? (
-                    <span className="text-sm text-muted-foreground">…</span>
-                  ) : null}
+                  {pageCount > 5 && (
+                    <span className="text-sm text-muted-foreground px-2">…</span>
+                  )}
 
                   <Button
-                    variant="ghost"
+                    variant="outline"
+                    size="sm"
                     disabled={pageSafe >= pageCount}
                     onClick={() => {
                       const next = Math.min(pageCount, pageSafe + 1)
                       setPage(next)
                       updateSearchParams({ page: next })
                     }}
+                    className="gap-1"
                   >
                     Next
+                    <ChevronRight className="size-4" />
                   </Button>
                 </div>
               </div>
@@ -337,30 +383,39 @@ function AddStaffDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button>+ Add Staff</Button>
+        <Button className="gap-2">
+          <UserPlus className="size-4" />
+          Add Staff
+        </Button>
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Staff (Demo)</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <UserPlus className="size-5 text-primary" />
+            Add Staff Member (Demo)
+          </DialogTitle>
+          <DialogDescription>
+            Register a new staff member in the directory.
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-3">
+        <div className="grid gap-4">
           <div>
-            <Label>Name</Label>
-            <Input placeholder="Alice Admin" />
+            <Label className="font-semibold">Name</Label>
+            <Input placeholder="Alice Admin" className="border-2" />
           </div>
           <div>
-            <Label>Role</Label>
-            <Input placeholder="doctor" />
+            <Label className="font-semibold">Role</Label>
+            <Input placeholder="doctor" className="border-2" />
           </div>
           <div>
-            <Label>Phone</Label>
-            <Input placeholder="+1 555 0101" />
+            <Label className="font-semibold">Phone</Label>
+            <Input placeholder="+1 555 0101" className="border-2" />
           </div>
           <div>
-            <Label>Email</Label>
-            <Input placeholder="email@example.com" />
+            <Label className="font-semibold">Email</Label>
+            <Input placeholder="email@example.com" className="border-2" />
           </div>
         </div>
 
@@ -376,28 +431,54 @@ function ViewStaffDialog({ staff }: { staff: Staff }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline">View</Button>
+        <Button variant="outline" size="sm" className="gap-1">
+          <Eye className="size-4" />
+          View
+        </Button>
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Staff Details</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Users className="size-5 text-primary" />
+            Staff Details
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-2 text-sm">
-          <div><span className="font-medium">Name:</span> {staff.name}</div>
-          <div><span className="font-medium">Role:</span> {staff.role}</div>
-          <div><span className="font-medium">Phone:</span> {staff.phone ?? '-'}</div>
-          <div><span className="font-medium">Email:</span> {staff.email ?? '-'}</div>
-          <div className="flex flex-wrap gap-1">
-            <span className="font-medium mr-2">Specialties:</span>
-            {(staff.specialties ?? []).map((sp) => (
-              <Badge key={sp.id} variant="secondary">
-                {sp.name}
-              </Badge>
-            ))}
+        <div className="space-y-3 text-sm">
+          <div className="flex justify-between p-2 rounded bg-muted/50">
+            <span className="font-semibold">Name:</span>
+            <span>{staff.name}</span>
           </div>
-          <div><span className="font-medium">Notes:</span> {staff.notes ?? '-'}</div>
+          <div className="flex justify-between p-2 rounded bg-muted/50">
+            <span className="font-semibold">Role:</span>
+            <Badge variant="secondary" className="capitalize">{staff.role}</Badge>
+          </div>
+          <div className="flex justify-between p-2 rounded bg-muted/50">
+            <span className="font-semibold">Phone:</span>
+            <span>{staff.phone ?? '-'}</span>
+          </div>
+          <div className="flex justify-between p-2 rounded bg-muted/50">
+            <span className="font-semibold">Email:</span>
+            <span>{staff.email ?? '-'}</span>
+          </div>
+          <div className="p-2 rounded bg-muted/50">
+            <span className="font-semibold block mb-2">Specialties:</span>
+            <div className="flex flex-wrap gap-1">
+              {(staff.specialties ?? []).map((sp) => (
+                <Badge key={sp.id} variant="outline">
+                  {sp.name}
+                </Badge>
+              ))}
+              {(staff.specialties ?? []).length === 0 && (
+                <span className="text-muted-foreground">None</span>
+              )}
+            </div>
+          </div>
+          <div className="p-2 rounded bg-muted/50">
+            <span className="font-semibold block mb-1">Notes:</span>
+            <span className="text-muted-foreground">{staff.notes ?? 'No notes'}</span>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -475,16 +556,24 @@ function EditStaffDialog({ staff }: { staff: Staff }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">Edit</Button>
+        <Button variant="outline" size="sm" className="gap-1">
+          <Edit2 className="size-4" />
+          Edit
+        </Button>
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Staff</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Edit2 className="size-5 text-primary" />
+            Edit Staff Member
+          </DialogTitle>
         </DialogHeader>
 
         {isLoading ? (
-          <div className="flex items-center gap-2 text-sm"><Spinner className="size-4" /> Loading…</div>
+          <div className="flex items-center gap-2 text-sm py-8 justify-center">
+            <Spinner className="size-4" /> Loading staff details...
+          </div>
         ) : (
           <form
             onSubmit={(e) => {
@@ -492,46 +581,50 @@ function EditStaffDialog({ staff }: { staff: Staff }) {
               if (!canSave) return
               updateMut.mutate()
             }}
-            className="grid gap-3"
+            className="grid gap-4"
           >
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <Label>First Name</Label>
-                <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                <Label className="font-semibold">First Name</Label>
+                <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} className="border-2" />
               </div>
               <div>
-                <Label>Last Name</Label>
-                <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
-              </div>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div>
-                <Label>Phone</Label>
-                <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
-              </div>
-              <div>
-                <Label>Date of Birth</Label>
-                <Input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+                <Label className="font-semibold">Last Name</Label>
+                <Input value={lastName} onChange={(e) => setLastName(e.target.value)} className="border-2" />
               </div>
             </div>
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <Label>Gender</Label>
-                <Input placeholder="male | female | other" value={gender} onChange={(e) => setGender(e.target.value)} />
+                <Label className="font-semibold">Phone</Label>
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="border-2" />
               </div>
               <div>
-                <Label>Avatar URL</Label>
-                <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
+                <Label className="font-semibold">Date of Birth</Label>
+                <Input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} className="border-2" />
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label className="font-semibold">Gender</Label>
+                <Input placeholder="male | female | other" value={gender} onChange={(e) => setGender(e.target.value)} className="border-2" />
+              </div>
+              <div>
+                <Label className="font-semibold">Avatar URL</Label>
+                <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} className="border-2" />
               </div>
             </div>
 
-            {updateMut.isError ? (
-              <div className="text-sm text-destructive">{(updateMut.error as Error)?.message ?? 'Update failed'}</div>
-            ) : null}
+            {updateMut.isError && (
+              <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg border border-destructive/20">
+                {(updateMut.error as Error)?.message ?? 'Update failed'}
+              </div>
+            )}
 
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={updateMut.isPending}>Cancel</Button>
-              <Button type="submit" disabled={!canSave || updateMut.isPending}>{updateMut.isPending ? 'Saving…' : 'Save'}</Button>
+              <Button type="submit" disabled={!canSave || updateMut.isPending}>
+                {updateMut.isPending ? 'Saving…' : 'Save Changes'}
+              </Button>
             </DialogFooter>
           </form>
         )}

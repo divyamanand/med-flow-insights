@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
+import { Users, Search } from "lucide-react";
 
 type StaffRow = {
   id: string;
@@ -51,45 +52,64 @@ export default function FulfillmentsStaffPage() {
   }, [staffQ.data, q]);
 
   return (
-    <Card>
-      <CardHeader className="flex items-center justify-between">
-        <CardTitle>Staff Fulfillments</CardTitle>
-        <Input
-          placeholder="Search name, role, ID..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="max-w-md"
-        />
+    <Card className="border-2 shadow-lg glass-effect">
+      <CardHeader>
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <CardTitle className="flex items-center gap-2">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Users className="size-5 text-primary" />
+            </div>
+            Staff Fulfillments
+          </CardTitle>
+          <div className="relative w-full sm:w-auto sm:min-w-[300px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input
+              placeholder="Search name, role, ID..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="pl-10 border-2"
+            />
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-auto">
+        <div className="overflow-auto max-h-[500px]">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Staff</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Start</TableHead>
-                <TableHead>End</TableHead>
-                <TableHead>Requirement</TableHead>
-                <TableHead>Notes</TableHead>
+              <TableRow className="border-muted/50">
+                <TableHead className="font-semibold">ID</TableHead>
+                <TableHead className="font-semibold">Staff</TableHead>
+                <TableHead className="font-semibold">Role</TableHead>
+                <TableHead className="font-semibold">Start</TableHead>
+                <TableHead className="font-semibold">End</TableHead>
+                <TableHead className="font-semibold">Requirement</TableHead>
+                <TableHead className="font-semibold">Notes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell className="whitespace-nowrap">{r.id}</TableCell>
-                  <TableCell className="whitespace-nowrap">{r.staffName}</TableCell>
-                  <TableCell><Badge variant="secondary">{r.staffRole}</Badge></TableCell>
-                  <TableCell>{fmt(r.startAt)}</TableCell>
-                  <TableCell>{fmt(r.endAt)}</TableCell>
-                  <TableCell className="whitespace-nowrap">{r.requirementId}</TableCell>
-                  <TableCell className="max-w-[320px] truncate">{r.notes ?? "—"}</TableCell>
+                <TableRow key={r.id} className="hover:bg-muted/50 transition-colors border-muted/30">
+                  <TableCell className="whitespace-nowrap font-mono text-sm text-muted-foreground">#{r.id}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <Users className="size-4 text-muted-foreground" />
+                      <span className="font-medium">{r.staffName}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className="capitalize">{r.staffRole}</Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{fmt(r.startAt)}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{fmt(r.endAt)}</TableCell>
+                  <TableCell className="whitespace-nowrap font-mono text-sm">#{r.requirementId}</TableCell>
+                  <TableCell className="max-w-[320px] truncate text-sm">{r.notes ?? "—"}</TableCell>
                 </TableRow>
               ))}
               {rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7}>No staff fulfillments.</TableCell>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    No staff fulfillments found
+                  </TableCell>
                 </TableRow>
               )}
             </TableBody>

@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Spinner } from '@/components/ui/spinner'
 import { Badge } from '@/components/ui/badge'
+import { User, Shield, Phone, Mail, Calendar, Activity, Edit2, Key, UserX, Filter } from 'lucide-react'
 
 type User = {
   id: string
@@ -120,39 +121,85 @@ export default function UserProfile() {
   const fullName = [localUser?.firstName, localUser?.lastName].filter(Boolean).join(' ') || 'Unnamed User'
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 sm:gap-8 animate-slide-in-bottom">
+      {/* Enhanced Header */}
+      <div className="space-y-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+          <User className="size-4 text-primary" />
+          <span className="text-sm font-medium text-primary">User Profile</span>
+        </div>
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight gradient-text">
+          {fullName}
+        </h1>
+        <p className="text-sm text-muted-foreground font-mono">ID: {localUser?.id}</p>
+      </div>
+
       {/* Profile Header Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>User Profile</CardTitle>
-          <CardDescription>ID: {localUser?.id}</CardDescription>
+      <Card className="border-2 border-border/50 shadow-lg glass-effect">
+        <CardHeader className="border-b border-border/50 bg-linear-to-r from-primary/5 to-accent/5">
+          <CardTitle className="flex items-center gap-2">
+            <User className="size-5 text-primary" />
+            Profile Information
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-start">
-            <div className="space-y-1">
-              <div className="text-lg font-medium underline underline-offset-4 decoration-transparent hover:decoration-inherit cursor-default">
-                {fullName}
+        <CardContent className="pt-6">
+          <div className="grid gap-6 lg:grid-cols-[1fr_auto]">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <Mail className="size-5 text-primary shrink-0" />
+                <div className="flex-1">
+                  <div className="text-xs text-muted-foreground mb-1">Email</div>
+                  <div className="font-medium">{localUser?.email}</div>
+                </div>
               </div>
-              <div className="text-sm text-muted-foreground">{localUser?.email}</div>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="font-medium">Role:</span> {localUser?.role}
-                {isDisabled ? <Badge variant="secondary">Disabled</Badge> : null}
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                  <Shield className="size-5 text-accent shrink-0" />
+                  <div className="flex-1">
+                    <div className="text-xs text-muted-foreground mb-1">Role</div>
+                    <Badge variant="secondary" className="capitalize">{localUser?.role}</Badge>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                  <Activity className="size-5 text-primary shrink-0" />
+                  <div className="flex-1">
+                    <div className="text-xs text-muted-foreground mb-1">Type</div>
+                    <div className="font-medium">{localUser?.userType ?? 'N/A'}</div>
+                  </div>
+                </div>
               </div>
-              <div className="text-sm"><span className="font-medium">Type:</span> {localUser?.userType ?? 'N/A'}</div>
+
+              {isDisabled && (
+                <Badge variant="destructive" className="gap-1">
+                  <UserX className="size-3" />
+                  Account Disabled
+                </Badge>
+              )}
             </div>
-            <div className="flex flex-col gap-2 sm:justify-start">
+
+            <div className="flex flex-col gap-3">
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="default">Reset Password</Button>
+                  <Button className="gap-2">
+                    <Key className="size-4" />
+                    Reset Password
+                  </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Force Reset Password</DialogTitle>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Key className="size-5 text-primary" />
+                      Force Reset Password
+                    </DialogTitle>
                     <DialogDescription>
                       This will set a new password for the user instantly.
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="text-sm">New password to be set: <span className="font-medium">Adm1nForced!23</span></div>
+                  <div className="text-sm bg-muted/50 p-4 rounded-lg">
+                    New password: <span className="font-mono font-semibold">Adm1nForced!23</span>
+                  </div>
                   <DialogFooter>
                     <Button onClick={() => resetPassword.mutate()} disabled={resetPassword.isPending}>
                       {resetPassword.isPending ? 'Resetting…' : 'Confirm Reset'}
@@ -163,7 +210,10 @@ export default function UserProfile() {
 
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline">Disable User</Button>
+                  <Button variant="outline" className="gap-2">
+                    <UserX className="size-4" />
+                    Disable User
+                  </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -178,138 +228,186 @@ export default function UserProfile() {
               </Dialog>
             </div>
           </div>
-          {resetSuccess ? (
-            <div className="text-sm mt-4 text-green-600">{resetSuccess}</div>
-          ) : null}
-          {resetError ? (
-            <div className="text-sm mt-4 text-destructive">{resetError}</div>
-          ) : null}
+
+          {resetSuccess && (
+            <div className="mt-4 p-3 rounded-lg bg-success/10 border border-success/20 text-success text-sm">
+              {resetSuccess}
+            </div>
+          )}
+          {resetError && (
+            <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+              {resetError}
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Personal Info Card */}
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <div>
-            <CardTitle>Personal Info</CardTitle>
+      <Card className="border-2 border-border/50 shadow-lg glass-effect">
+        <CardHeader className="border-b border-border/50 bg-linear-to-r from-primary/5 to-accent/5">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <User className="size-5 text-primary" />
+              Personal Information
+            </CardTitle>
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+              <DialogTrigger asChild>
+                <Button size="icon" variant="ghost" className="rounded-full" aria-label="Edit Personal Info">
+                  <Edit2 className="size-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Edit2 className="size-5 text-primary" />
+                    Edit Personal Info
+                  </DialogTitle>
+                </DialogHeader>
+                <Form {...editForm}>
+                  <form
+                    className="grid gap-4"
+                    onSubmit={editForm.handleSubmit((values) => {
+                      setLocalUser((prev) => (prev ? { ...prev, ...values } : prev))
+                      setEditOpen(false)
+                    })}
+                  >
+                    <FormField
+                      control={editForm.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Label>First Name</Label>
+                          <FormControl>
+                            <Input {...field} className="border-2" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={editForm.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Label>Last Name</Label>
+                          <FormControl>
+                            <Input {...field} className="border-2" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={editForm.control}
+                      name="dateOfBirth"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Label>Date of Birth</Label>
+                          <FormControl>
+                            <Input type="date" {...field} className="border-2" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={editForm.control}
+                      name="gender"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Label>Gender</Label>
+                          <FormControl>
+                            <Input placeholder="Male/Female/Other" {...field} className="border-2" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={editForm.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Label>Phone</Label>
+                          <FormControl>
+                            <Input placeholder="+1 555 000 0000" {...field} className="border-2" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <DialogFooter>
+                      <Button type="submit">Save Changes</Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
           </div>
-          <Dialog open={editOpen} onOpenChange={setEditOpen}>
-            <DialogTrigger asChild>
-              <Button size="icon" className="rounded-full" aria-label="Edit Personal Info">
-                ✎
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Edit Personal Info</DialogTitle>
-              </DialogHeader>
-              <Form {...editForm}>
-                <form
-                  className="grid gap-3"
-                  onSubmit={editForm.handleSubmit((values) => {
-                    setLocalUser((prev) => (prev ? { ...prev, ...values } : prev))
-                    setEditOpen(false)
-                  })}
-                >
-                  <FormField
-                    control={editForm.control}
-                    name="firstName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Label>First Name</Label>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={editForm.control}
-                    name="lastName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Label>Last Name</Label>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={editForm.control}
-                    name="dateOfBirth"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Label>Date of Birth</Label>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={editForm.control}
-                    name="gender"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Label>Gender</Label>
-                        <FormControl>
-                          <Input placeholder="Male/Female/Other" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={editForm.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Label>Phone</Label>
-                        <FormControl>
-                          <Input placeholder="+1 555 000 0000" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <DialogFooter>
-                    <Button type="submit">Save</Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <div>First Name: <span className="underline underline-offset-4 decoration-transparent hover:decoration-inherit cursor-default">{localUser?.firstName || 'Not Provided'}</span></div>
-            <div>Phone: <span className="underline underline-offset-4 decoration-transparent hover:decoration-inherit cursor-default">{localUser?.phone || 'Not Provided'}</span></div>
-            <div>Date of Birth: <span>{localUser?.dateOfBirth || 'Not Provided'}</span></div>
-            <div>Gender: <span>{localUser?.gender || 'Not Provided'}</span></div>
-            <div>Patient Record: <span className="underline underline-offset-4">Not Linked</span></div>
+        <CardContent className="pt-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <User className="size-5 text-primary shrink-0" />
+              <div className="flex-1">
+                <div className="text-xs text-muted-foreground mb-1">First Name</div>
+                <div className="font-medium">{localUser?.firstName || 'Not Provided'}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <Phone className="size-5 text-primary shrink-0" />
+              <div className="flex-1">
+                <div className="text-xs text-muted-foreground mb-1">Phone</div>
+                <div className="font-medium">{localUser?.phone || 'Not Provided'}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <Calendar className="size-5 text-primary shrink-0" />
+              <div className="flex-1">
+                <div className="text-xs text-muted-foreground mb-1">Date of Birth</div>
+                <div className="font-medium">{localUser?.dateOfBirth || 'Not Provided'}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <User className="size-5 text-primary shrink-0" />
+              <div className="flex-1">
+                <div className="text-xs text-muted-foreground mb-1">Gender</div>
+                <div className="font-medium">{localUser?.gender || 'Not Provided'}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <Activity className="size-5 text-primary shrink-0" />
+              <div className="flex-1">
+                <div className="text-xs text-muted-foreground mb-1">Patient Record</div>
+                <div className="text-sm text-muted-foreground">Not Linked</div>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Login & Activity Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Login & Activity</CardTitle>
+      <Card className="border-2 border-border/50 shadow-lg glass-effect">
+        <CardHeader className="border-b border-border/50 bg-linear-to-r from-primary/5 to-accent/5">
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="size-5 text-primary" />
+            Login & Activity Log
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <CardContent className="pt-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Label className="sr-only">Filter</Label>
+              <Filter className="size-4 text-muted-foreground" />
               <Select value={filter} onValueChange={setFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="min-w-40 border-2">
                   <SelectValue placeholder="Filter" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All</SelectItem>
+                  <SelectItem value="All">All Activities</SelectItem>
                   <SelectItem value="Login">Login</SelectItem>
                   <SelectItem value="Logout">Logout</SelectItem>
                   <SelectItem value="System">System</SelectItem>
@@ -318,30 +416,48 @@ export default function UserProfile() {
               </Select>
             </div>
             <div className="flex-1 sm:max-w-sm">
-              <Input placeholder="Search description or IP" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Input
+                placeholder="Search description or IP"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="border-2"
+              />
             </div>
           </div>
           <Separator className="my-4" />
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Time</TableHead>
-                <TableHead>Action Type</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>IP Address</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((r, idx) => (
-                <TableRow key={idx}>
-                  <TableCell>{r.time}</TableCell>
-                  <TableCell>{r.action}</TableCell>
-                  <TableCell>{r.description}</TableCell>
-                  <TableCell>{r.ip}</TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b-2 border-border/50 hover:bg-transparent">
+                  <TableHead className="font-semibold">Time</TableHead>
+                  <TableHead className="font-semibold">Action Type</TableHead>
+                  <TableHead className="font-semibold">Description</TableHead>
+                  <TableHead className="font-semibold">IP Address</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((r, idx) => (
+                  <TableRow key={idx} className="hover:bg-muted/50 transition-colors">
+                    <TableCell className="font-medium">{r.time}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{r.action}</Badge>
+                    </TableCell>
+                    <TableCell>{r.description}</TableCell>
+                    <TableCell>
+                      <span className="font-mono text-xs">{r.ip}</span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filtered.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                      No activities found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

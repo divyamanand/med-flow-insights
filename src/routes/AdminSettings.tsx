@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
+import { Settings, Shield, Bell, Database, Server, Save, Building2 } from "lucide-react";
 
 /* -------------------------------------------------------------------------- */
 /*                               MOCKED API LAYER                             */
@@ -108,31 +109,46 @@ export default function AdministratorSettings() {
   /* -------------------------------------------------------------------------- */
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-8">
-      <h1 className="text-2xl font-semibold">Administrator Settings</h1>
+    <div className="flex flex-col gap-6 sm:gap-8 animate-slide-in-bottom">
+      {/* Enhanced Header */}
+      <div className="space-y-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20">
+          <Settings className="size-4 text-accent" />
+          <span className="text-sm font-medium text-accent">System Configuration</span>
+        </div>
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight gradient-text">
+          Administrator Settings
+        </h1>
+      </div>
 
       {/* ------------------------------- GENERAL ------------------------------- */}
       <div className="grid md:grid-cols-2 gap-6">
-        <Card>
+        <Card className="border-2 shadow-lg glass-effect">
           <CardHeader>
-            <CardTitle>General</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Building2 className="size-5 text-primary" />
+              </div>
+              General Settings
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label>Hospital Name</Label>
+            <div className="space-y-2">
+              <Label className="font-semibold">Hospital Name</Label>
               <Input
                 value={form.general.hospitalName}
                 onChange={(e) => update("general.hospitalName", e.target.value)}
+                className="border-2"
               />
             </div>
 
-            <div>
-              <Label>Timezone</Label>
+            <div className="space-y-2">
+              <Label className="font-semibold">Timezone</Label>
               <Select
                 value={form.general.timezone}
                 onValueChange={(v) => update("general.timezone", v)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="border-2">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -143,48 +159,58 @@ export default function AdministratorSettings() {
               </Select>
             </div>
 
-            <div>
-              <Label>Hospital Logo</Label>
-              <Input type="file" />
+            <div className="space-y-2">
+              <Label className="font-semibold">Hospital Logo</Label>
+              <Input type="file" className="border-2" />
             </div>
           </CardContent>
         </Card>
 
         {/* ----------------------------- SECURITY ------------------------------ */}
-        <Card>
+        <Card className="border-2 shadow-lg glass-effect">
           <CardHeader>
-            <CardTitle>Security</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <div className="p-2 bg-destructive/10 rounded-lg">
+                <Shield className="size-5 text-destructive" />
+              </div>
+              Security Settings
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label>Minimum Password Length</Label>
+            <div className="space-y-2">
+              <Label className="font-semibold">Minimum Password Length</Label>
               <Input
                 type="number"
                 value={form.security.minPasswordLength}
                 onChange={(e) =>
                   update("security.minPasswordLength", Number(e.target.value))
                 }
+                className="border-2"
               />
             </div>
 
-            <div>
-              <Label>Refresh Token Validity (days)</Label>
+            <div className="space-y-2">
+              <Label className="font-semibold">Refresh Token Validity (days)</Label>
               <Input
                 type="number"
                 value={form.security.refreshTokenDays}
                 onChange={(e) =>
                   update("security.refreshTokenDays", Number(e.target.value))
                 }
+                className="border-2"
               />
             </div>
 
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="outline">Email Provider Configuration</Button>
+                <Button variant="outline" className="w-full">Email Provider Configuration</Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="border-2 shadow-2xl">
                 <DialogHeader>
-                  <DialogTitle>Email Provider (Demo)</DialogTitle>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Shield className="size-5 text-primary" />
+                    Email Provider (Demo)
+                  </DialogTitle>
                 </DialogHeader>
                 <p className="text-sm text-muted-foreground">Configure SMTP later.</p>
                 <DialogFooter>
@@ -197,114 +223,129 @@ export default function AdministratorSettings() {
       </div>
 
       {/* ----------------------------- NOTIFICATIONS ---------------------------- */}
-      <Card>
+      <Card className="border-2 shadow-lg glass-effect">
         <CardHeader>
-          <CardTitle>Notifications</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <div className="p-2 bg-warning/10 rounded-lg">
+              <Bell className="size-5 text-warning" />
+            </div>
+            Notification Settings
+          </CardTitle>
         </CardHeader>
 
         <CardContent className="grid md:grid-cols-3 gap-6">
           {/* LEFT SIDE */}
           <div className="space-y-4">
-            <div>
-              <Label>Minimum Password Length</Label>
+            <div className="space-y-2">
+              <Label className="font-semibold">Minimum Password Length</Label>
               <Input
                 type="number"
                 value={form.notifications.minPasswordLength}
                 onChange={(e) =>
                   update("notifications.minPasswordLength", Number(e.target.value))
                 }
+                className="border-2"
               />
             </div>
 
-            <div>
-              <Label>Access Token Expiry (minutes)</Label>
+            <div className="space-y-2">
+              <Label className="font-semibold">Access Token Expiry (minutes)</Label>
               <Input
                 type="number"
                 value={form.notifications.accessTokenExpiry}
                 onChange={(e) =>
                   update("notifications.accessTokenExpiry", Number(e.target.value))
                 }
+                className="border-2"
               />
             </div>
 
-            <div>
-              <Label>Refresh Token Expiry (minutes)</Label>
+            <div className="space-y-2">
+              <Label className="font-semibold">Refresh Token Expiry (minutes)</Label>
               <Input
                 type="number"
                 value={form.notifications.refreshTokenExpiry}
                 onChange={(e) =>
                   update("notifications.refreshTokenExpiry", Number(e.target.value))
                 }
+                className="border-2"
               />
             </div>
           </div>
 
           {/* CENTER */}
           <div className="space-y-4">
-            <Label>Appointment Expiry (days)</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                value={form.notifications.appointmentExpiry}
-                onChange={(e) =>
-                  update("notifications.appointmentExpiry", Number(e.target.value))
-                }
-              />
-              <Button variant="outline">Configure</Button>
+            <div className="space-y-2">
+              <Label className="font-semibold">Appointment Expiry (days)</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  value={form.notifications.appointmentExpiry}
+                  onChange={(e) =>
+                    update("notifications.appointmentExpiry", Number(e.target.value))
+                  }
+                  className="border-2"
+                />
+                <Button variant="outline">Configure</Button>
+              </div>
             </div>
 
-            <Label>Reminder Timings</Label>
-
-            <div className="space-y-1">
-              {[24, 12, 1].map((h) => (
-                <div key={h} className="flex items-center gap-2">
-                  <Switch
-                    checked={form.notifications.reminderTimings.includes(h)}
-                    onCheckedChange={(checked) => {
-                      const arr = [...form.notifications.reminderTimings];
-                      if (checked) arr.push(h);
-                      else arr.splice(arr.indexOf(h), 1);
-                      update("notifications.reminderTimings", arr);
-                    }}
-                  />
-                  <span>{h} hours</span>
-                </div>
-              ))}
+            <div className="space-y-2">
+              <Label className="font-semibold">Reminder Timings</Label>
+              <div className="space-y-2">
+                {[24, 12, 1].map((h) => (
+                  <div key={h} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
+                    <Switch
+                      checked={form.notifications.reminderTimings.includes(h)}
+                      onCheckedChange={(checked) => {
+                        const arr = [...form.notifications.reminderTimings];
+                        if (checked) arr.push(h);
+                        else arr.splice(arr.indexOf(h), 1);
+                        update("notifications.reminderTimings", arr);
+                      }}
+                    />
+                    <Label className="cursor-pointer flex-1">{h} hours</Label>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* RIGHT */}
           <div className="space-y-4">
-            <div>
-              <Label>Audit Log Retention (days)</Label>
+            <div className="space-y-2">
+              <Label className="font-semibold">Audit Log Retention (days)</Label>
               <Input
                 type="number"
                 value={form.retention.auditRetention}
                 onChange={(e) =>
                   update("retention.auditRetention", Number(e.target.value))
                 }
+                className="border-2"
               />
             </div>
 
-            <div>
-              <Label>Patient Invite Retention (days)</Label>
+            <div className="space-y-2">
+              <Label className="font-semibold">Patient Invite Retention (days)</Label>
               <Input
                 type="number"
                 value={form.retention.inviteRetention}
                 onChange={(e) =>
                   update("retention.inviteRetention", Number(e.target.value))
                 }
+                className="border-2"
               />
             </div>
 
-            <div>
-              <Label>Auto-delete Cancelled Appointments After (days)</Label>
+            <div className="space-y-2">
+              <Label className="font-semibold">Auto-delete Cancelled Appointments After (days)</Label>
               <Input
                 type="number"
                 value={form.retention.autoDeleteCancelledDays}
                 onChange={(e) =>
                   update("retention.autoDeleteCancelledDays", Number(e.target.value))
                 }
+                className="border-2"
               />
             </div>
           </div>
@@ -312,18 +353,32 @@ export default function AdministratorSettings() {
       </Card>
 
       {/* ------------------------------- TOGGLES ------------------------------- */}
-      <Card>
+      <Card className="border-2 shadow-lg glass-effect">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <div className="p-2 bg-success/10 rounded-lg">
+              <Server className="size-5 text-success" />
+            </div>
+            System Toggles
+          </CardTitle>
+        </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label>Trigger Database Backup</Label>
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+            <div className="space-y-1">
+              <Label className="font-semibold">Trigger Database Backup</Label>
+              <p className="text-sm text-muted-foreground">Enable automated database backups</p>
+            </div>
             <Switch
               checked={form.toggles.backupEnabled}
               onCheckedChange={(v) => update("toggles.backupEnabled", v)}
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <Label>Maintenance Mode</Label>
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+            <div className="space-y-1">
+              <Label className="font-semibold">Maintenance Mode</Label>
+              <p className="text-sm text-muted-foreground">Temporarily disable system access</p>
+            </div>
             <Switch
               checked={form.toggles.maintenanceEnabled}
               onCheckedChange={(v) => update("toggles.maintenanceEnabled", v)}
@@ -335,11 +390,21 @@ export default function AdministratorSettings() {
       {/* ------------------------------ SAVE BUTTON ----------------------------- */}
       <div className="flex justify-end">
         <Button
-          className="px-6"
+          className="gap-2 min-w-[200px]"
           disabled={saveMutation.isPending}
           onClick={handleSave}
         >
-          {saveMutation.isPending ? "Saving..." : "Save Changes"}
+          {saveMutation.isPending ? (
+            <>
+              <Spinner className="size-4" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="size-4" />
+              Save All Settings
+            </>
+          )}
         </Button>
       </div>
     </div>

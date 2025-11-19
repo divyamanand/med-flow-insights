@@ -19,6 +19,8 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, Filter, UserCheck, UserX, CheckCircle, XCircle, ChevronLeft, ChevronRight, Users } from "lucide-react";
 
 export default function StaffLeaveManagement() {
   /* ---------------------------------- Filters ---------------------------------- */
@@ -87,23 +89,37 @@ export default function StaffLeaveManagement() {
   const paged = rows.slice(start, end);
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <h1 className="text-3xl font-semibold">Staff Leave Management</h1>
+    <div className="flex flex-col gap-6 sm:gap-8 animate-slide-in-bottom">
+      {/* Enhanced Header */}
+      <div className="space-y-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-warning/10 border border-warning/20">
+          <Calendar className="size-4 text-warning" />
+          <span className="text-sm font-medium text-warning">Leave Requests</span>
+        </div>
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight gradient-text">
+          Staff Leave Management
+        </h1>
+      </div>
 
       {/* ------------------------------- Filters ------------------------------- */}
-      <Card>
+      <Card className="border-2 shadow-lg glass-effect">
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <div className="p-2 bg-accent/10 rounded-lg">
+              <Filter className="size-5 text-accent" />
+            </div>
+            Filters
+          </CardTitle>
         </CardHeader>
 
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
             
             {/* Role */}
-            <div>
-              <label className="text-sm font-medium">Staff Role</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Staff Role</label>
               <Select value={role} onValueChange={setRole}>
-                <SelectTrigger>
+                <SelectTrigger className="border-2">
                   <SelectValue placeholder="Select Role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -118,10 +134,10 @@ export default function StaffLeaveManagement() {
             </div>
 
             {/* Specialty */}
-            <div>
-              <label className="text-sm font-medium">Specialty</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Specialty</label>
               <Select value={specialtyId} onValueChange={setSpecialtyId}>
-                <SelectTrigger>
+                <SelectTrigger className="border-2">
                   <SelectValue placeholder="Select Specialty" />
                 </SelectTrigger>
                 <SelectContent>
@@ -134,10 +150,10 @@ export default function StaffLeaveManagement() {
             </div>
 
             {/* Status */}
-            <div>
-              <label className="text-sm font-medium">Status</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Status</label>
               <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger>
+                <SelectTrigger className="border-2">
                   <SelectValue placeholder="Pending" />
                 </SelectTrigger>
                 <SelectContent>
@@ -150,61 +166,77 @@ export default function StaffLeaveManagement() {
             </div>
 
             {/* Date Range */}
-            <div>
-              <label className="text-sm font-medium">Start Date</label>
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Start Date</label>
+              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="border-2" />
             </div>
 
-            <div>
-              <label className="text-sm font-medium">End Date</label>
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">End Date</label>
+              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="border-2" />
             </div>
           </div>
 
           <div className="flex justify-end mt-4">
-            <Button onClick={() => leavesQ.refetch()}>Apply Filters</Button>
+            <Button onClick={() => leavesQ.refetch()} className="gap-2">
+              <Filter className="size-4" />
+              Apply Filters
+            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* ------------------------------- Table ------------------------------- */}
-      <Card>
-        <CardHeader className="flex justify-between items-center">
-          <CardTitle>Leave Records</CardTitle>
+      <Card className="border-2 shadow-lg glass-effect">
+        <CardHeader className="flex flex-row justify-between items-center flex-wrap gap-3">
+          <CardTitle className="flex items-center gap-2">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <UserCheck className="size-5 text-primary" />
+            </div>
+            Leave Records
+          </CardTitle>
 
-          <Button>Add New Leave</Button>
+          <Button className="gap-2">
+            <Calendar className="size-4" />
+            Add New Leave
+          </Button>
         </CardHeader>
 
         <CardContent>
-          <div className="overflow-auto">
+          <div className="overflow-auto max-h-[500px]">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>#</TableHead>
-                  <TableHead>Staff Name</TableHead>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead>End Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
+                <TableRow className="border-muted/50">
+                  <TableHead className="font-semibold">#</TableHead>
+                  <TableHead className="font-semibold">Staff Name</TableHead>
+                  <TableHead className="font-semibold">Start Date</TableHead>
+                  <TableHead className="font-semibold">End Date</TableHead>
+                  <TableHead className="font-semibold">Status</TableHead>
+                  <TableHead className="font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
 
               <TableBody>
                 {paged.map((r, idx) => (
-                  <TableRow key={r.id}>
-                    <TableCell>{start + idx + 1}</TableCell>
-                    <TableCell>{r.name}</TableCell>
-                    <TableCell>{r.startDate}</TableCell>
-                    <TableCell>{r.endDate}</TableCell>
+                  <TableRow key={r.id} className="hover:bg-muted/50 transition-colors border-muted/30">
+                    <TableCell className="font-mono text-sm text-muted-foreground">#{start + idx + 1}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Users className="size-4 text-muted-foreground" />
+                        <span className="font-medium">{r.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{r.startDate}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{r.endDate}</TableCell>
                     <TableCell>
                       {r.status === "pending" && (
-                        <span className="text-yellow-500 font-medium">Pending</span>
+                        <Badge variant="secondary">Pending</Badge>
                       )}
                       {r.status === "approved" && (
-                        <span className="text-green-600 font-medium">Approved</span>
+                        <Badge variant="default">Approved</Badge>
                       )}
                       {r.status === "rejected" && (
-                        <span className="text-red-600 font-medium">Rejected</span>
+                        <Badge variant="destructive">Rejected</Badge>
                       )}
                     </TableCell>
 
@@ -212,13 +244,16 @@ export default function StaffLeaveManagement() {
                       <div className="flex gap-2">
                         {r.status === "pending" && (
                           <>
-                            <Button size="sm" className="bg-green-600 text-white hover:bg-green-700">
+                            <Button size="sm" variant="default" className="gap-1">
+                              <CheckCircle className="size-3" />
                               Approve
                             </Button>
                             <Button
                               size="sm"
-                              className="bg-red-600 text-white hover:bg-red-700"
+                              variant="destructive"
+                              className="gap-1"
                             >
+                              <XCircle className="size-3" />
                               Reject
                             </Button>
                           </>
@@ -236,7 +271,7 @@ export default function StaffLeaveManagement() {
 
                 {rows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-6">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       No leave records found
                     </TableCell>
                   </TableRow>
@@ -246,6 +281,34 @@ export default function StaffLeaveManagement() {
           </div>
 
           {/* ------------------------------ Pagination ------------------------------ */}
+          <div className="flex justify-between items-center mt-4 text-sm">
+            <div className="text-muted-foreground">
+              Showing <span className="font-semibold text-foreground">{rows.length === 0 ? 0 : start + 1}</span> to <span className="font-semibold text-foreground">{end}</span> of <span className="font-semibold text-foreground">{rows.length}</span> results
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page === 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="gap-1"
+              >
+                <ChevronLeft className="size-4" />
+                Previous
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={end >= rows.length}
+                onClick={() => setPage((p) => p + 1)}
+                className="gap-1"
+              >
+                Next
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          </div>
           <div className="flex justify-between items-center mt-4 text-sm">
             <div>
               Showing {rows.length === 0 ? 0 : start + 1}–{end} of {rows.length}

@@ -30,10 +30,12 @@ import {
   Dialog,
   DialogTrigger,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { DoorClosed, Filter, Eye, CheckCircle, XCircle, Link as LinkIcon, ChevronLeft, ChevronRight } from "lucide-react";
 
 /* ---------------- Types (from your backend) ---------------- */
 type RoomRequirement = {
@@ -115,18 +117,27 @@ export default function RoomRequirementsManagement() {
   const paged = rows.slice(start, end);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 sm:gap-8">
       {/* Top bar: title, search, add button */}
       <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-semibold flex-1">Room Requirements</h2>
+        <div className="flex items-center gap-3 flex-wrap">
+          <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight gradient-text flex-1">Room Requirements</h2>
           <Dialog>
             <DialogTrigger asChild>
-              <Button>+ Add New Requirement</Button>
+              <Button className="gap-2">
+                <DoorClosed className="size-4" />
+                Add Requirement
+              </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="border-2 shadow-2xl">
               <DialogHeader>
-                <DialogTitle>Add New Room Requirement</DialogTitle>
+                <DialogTitle className="flex items-center gap-2">
+                  <DoorClosed className="size-5 text-primary" />
+                  Add New Room Requirement
+                </DialogTitle>
+                <DialogDescription>
+                  Create a new room allocation request.
+                </DialogDescription>
               </DialogHeader>
               <CreateRequirementForm onSubmit={createReq.mutate} />
               <DialogFooter>
@@ -138,7 +149,7 @@ export default function RoomRequirementsManagement() {
         <div className="flex items-center gap-2">
           <Input
             placeholder="Search by ID or Requester..."
-            className="max-w-md"
+            className="max-w-md border-2"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -149,26 +160,29 @@ export default function RoomRequirementsManagement() {
       </div>
 
       {/* Filter row */}
-      <Card>
+      <Card className="border-2 shadow-lg glass-effect">
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm font-medium text-muted-foreground mr-1">Filter Type</span>
+            <div className="flex items-center gap-2">
+              <Filter className="size-4 text-accent" />
+              <span className="text-sm font-semibold">Filter by:</span>
+            </div>
             <div className="min-w-[220px]">
               <Select value={roomType} onValueChange={(v) => { setRoomType(v); setPage(1); }}>
-                <SelectTrigger>
+                <SelectTrigger className="border-2">
                   <SelectValue placeholder="Select Room Type..." />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Rooms</SelectItem>
                   {ROOM_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                    <SelectItem key={type} value={type} className="capitalize">{type}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="min-w-[220px]">
               <Select value={status} onValueChange={(v) => { setStatus(v); setPage(1); }}>
-                <SelectTrigger>
+                <SelectTrigger className="border-2">
                   <SelectValue placeholder="Select Status..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -186,72 +200,103 @@ export default function RoomRequirementsManagement() {
       </Card>
 
       {/* Table */}
-      <Card>
+      <Card className="border-2 shadow-lg glass-effect">
         <CardContent>
-          <div className="overflow-auto">
+          <div className="overflow-auto max-h-[600px]">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Qty</TableHead>
-                  <TableHead>Fulfilled</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Requested By</TableHead>
-                  <TableHead>Actions</TableHead>
+                <TableRow className="border-muted/50">
+                  <TableHead className="font-semibold">ID</TableHead>
+                  <TableHead className="font-semibold">Type</TableHead>
+                  <TableHead className="font-semibold">Qty</TableHead>
+                  <TableHead className="font-semibold">Fulfilled</TableHead>
+                  <TableHead className="font-semibold">Status</TableHead>
+                  <TableHead className="font-semibold">Requested By</TableHead>
+                  <TableHead className="font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
 
               <TableBody>
                 {paged.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="whitespace-nowrap">{r.id}</TableCell>
-                    <TableCell><Badge variant="secondary">{r.roomType}</Badge></TableCell>
-                    <TableCell>{r.quantity}</TableCell>
-                    <TableCell>{r.fulfilled ?? 0}</TableCell>
+                  <TableRow key={r.id} className="hover:bg-muted/50 transition-colors border-muted/30">
+                    <TableCell className="whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <DoorClosed className="size-4 text-muted-foreground" />
+                        <span className="font-mono text-sm text-muted-foreground">#{r.id}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell><Badge variant="secondary" className="capitalize">{r.roomType}</Badge></TableCell>
+                    <TableCell><Badge variant="outline">{r.quantity}</Badge></TableCell>
+                    <TableCell><Badge variant="outline">{r.fulfilled ?? 0}</Badge></TableCell>
                     <TableCell>
-                      {r.status === "fulfilled" && <Badge>{"Fulfilled"}</Badge>}
+                      {r.status === "fulfilled" && <Badge variant="default">Fulfilled</Badge>}
                       {r.status === "inProgress" && <Badge variant="secondary">In Progress</Badge>}
                       {r.status === "open" && <Badge variant="outline">Open</Badge>}
                       {r.status === "cancelled" && <Badge variant="destructive">Cancelled</Badge>}
                     </TableCell>
-                    <TableCell className="whitespace-nowrap">{r.primaryUserId}</TableCell>
+                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{r.primaryUserId}</TableCell>
 
                     <TableCell>
                       <div className="flex gap-2">
                         {/* View */}
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button size="sm" variant="outline">
+                            <Button size="sm" variant="outline" className="gap-1">
+                              <Eye className="size-3" />
                               View
                             </Button>
                           </DialogTrigger>
 
-                          <DialogContent>
+                          <DialogContent className="border-2 shadow-2xl">
                             <DialogHeader>
-                              <DialogTitle>Room Requirement</DialogTitle>
+                              <DialogTitle className="flex items-center gap-2">
+                                <Eye className="size-5 text-primary" />
+                                Room Requirement Details
+                              </DialogTitle>
                             </DialogHeader>
 
-                            <div className="text-sm space-y-2">
-                              <p><b>ID:</b> {r.id}</p>
-                              <p><b>Room Type:</b> {r.roomType}</p>
-                              <p><b>Quantity:</b> {r.quantity}</p>
-                              <p><b>Status:</b> {r.status}</p>
-                              <p><b>Requested By:</b> {r.primaryUserId}</p>
-                              <p><b>Notes:</b> {r.notes || "—"}</p>
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                                <span className="text-sm font-medium text-muted-foreground">ID</span>
+                                <span className="font-mono text-sm">#{r.id}</span>
+                              </div>
+                              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                                <span className="text-sm font-medium text-muted-foreground">Room Type</span>
+                                <Badge className="capitalize">{r.roomType}</Badge>
+                              </div>
+                              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                                <span className="text-sm font-medium text-muted-foreground">Quantity</span>
+                                <Badge variant="outline">{r.quantity}</Badge>
+                              </div>
+                              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                                <span className="text-sm font-medium text-muted-foreground">Status</span>
+                                <Badge>{r.status}</Badge>
+                              </div>
+                              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                                <span className="text-sm font-medium text-muted-foreground">Requested By</span>
+                                <span className="text-sm">{r.primaryUserId}</span>
+                              </div>
+                              <div className="p-3 rounded-lg bg-muted/50">
+                                <span className="text-sm font-medium text-muted-foreground block mb-2">Notes</span>
+                                <p className="text-sm">{r.notes || "—"}</p>
+                              </div>
                             </div>
                           </DialogContent>
                         </Dialog>
 
                         {/* Fulfillments */}
-                        <Button asChild size="sm" variant="outline">
-                          <Link to={`/requirements/rooms/${r.id}/fulfillments`}>Fulfillments</Link>
+                        <Button asChild size="sm" variant="outline" className="gap-1">
+                          <Link to={`/requirements/rooms/${r.id}/fulfillments`}>
+                            <LinkIcon className="size-3" />
+                            Fulfillments
+                          </Link>
                         </Button>
 
                         {/* Approve (set status=inProgress) */}
                         <Button
                           size="sm"
-                          variant="secondary"
+                          variant="default"
+                          className="gap-1"
                           onClick={() =>
                             updateReq.mutate({
                               id: r.id,
@@ -259,6 +304,7 @@ export default function RoomRequirementsManagement() {
                             })
                           }
                         >
+                          <CheckCircle className="size-3" />
                           Approve
                         </Button>
 
@@ -266,6 +312,7 @@ export default function RoomRequirementsManagement() {
                         <Button
                           size="sm"
                           variant="destructive"
+                          className="gap-1"
                           onClick={() =>
                             updateReq.mutate({
                               id: r.id,
@@ -273,6 +320,7 @@ export default function RoomRequirementsManagement() {
                             })
                           }
                         >
+                          <XCircle className="size-3" />
                           Cancel
                         </Button>
                       </div>
@@ -284,18 +332,24 @@ export default function RoomRequirementsManagement() {
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between mt-4 text-sm">
-            <div>
-              {total === 0 ? "Showing 0 of 0" : `Showing ${start + 1}-${end} of ${total}`}
+          <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+            <div className="font-semibold">
+              {total === 0 ? (
+                "Showing 0 of 0 results"
+              ) : (
+                `Showing ${start + 1} to ${end} of ${total} results`
+              )}
             </div>
 
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                « Previous
+              <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="gap-1">
+                <ChevronLeft className="size-4" />
+                Previous
               </Button>
-              <div className="px-2">{page}</div>
-              <Button size="sm" variant="outline" disabled={end >= total} onClick={() => setPage((p) => p + 1)}>
-                Next »
+              <div className="px-3 py-1 bg-muted rounded-md font-medium">{page}</div>
+              <Button size="sm" variant="outline" disabled={end >= total} onClick={() => setPage((p) => p + 1)} className="gap-1">
+                Next
+                <ChevronRight className="size-4" />
               </Button>
             </div>
           </div>

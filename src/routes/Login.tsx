@@ -13,6 +13,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Separator } from '@/components/ui/separator'
+import { Activity, Lock, Mail, ArrowRight, Sparkles, Shield, Zap } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 const LoginSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Enter a valid email'),
@@ -46,7 +48,7 @@ export default function Login() {
       navigate('/dashboard')
     },
     onError: (err: any) => {
-      setErrorMessage(err?.message || 'Login failed')
+      setErrorMessage(err?.message || 'Login failed. Please check your credentials.')
     },
   })
 
@@ -56,65 +58,200 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-[calc(100dvh-4rem)] flex items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>LOGIN</CardTitle>
-          <CardDescription>Access your account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <Label htmlFor="email">Email</Label>
-                    <FormControl>
-                      <Input id="email" type="email" autoComplete="email" placeholder="you@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <Label htmlFor="password">Password</Label>
-                    <FormControl>
-                      <Input id="password" type="password" autoComplete="current-password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="flex justify-end">
-                <Link to="/forgot-password" className="text-sm underline underline-offset-4 hover:text-primary">
-                  Forgot Password?
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background gradients */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-20 left-10 size-96 bg-primary/20 rounded-full blur-3xl animate-pulse-glow"></div>
+        <div className="absolute bottom-20 right-10 size-96 bg-accent/20 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-96 bg-secondary/10 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        {/* Left Side - Branding and Info */}
+        <div className="hidden lg:flex flex-col justify-center space-y-8 p-8 animate-slide-in-bottom">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center size-14 rounded-2xl bg-linear-to-br from-primary to-accent shadow-xl">
+                <Activity className="size-8 text-primary-foreground" strokeWidth={2.5} />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold gradient-text">MedFlow Insights</h1>
+                <p className="text-muted-foreground">Hospital Operations Suite</p>
+              </div>
+            </div>
+            
+            <h2 className="text-4xl font-extrabold tracking-tight leading-tight mt-8">
+              Welcome back to your
+              <span className="block gradient-text mt-2">Healthcare Command Center</span>
+            </h2>
+            
+            <p className="text-lg text-muted-foreground leading-relaxed">
+              Access your comprehensive hospital management platform. Streamline operations, enhance patient care, and drive excellence.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-start gap-4 p-4 glass-effect rounded-xl border border-border/50">
+              <div className="flex items-center justify-center size-10 rounded-lg bg-success/20 shrink-0">
+                <Shield className="size-5 text-success" />
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Enterprise Security</h3>
+                <p className="text-sm text-muted-foreground">Bank-level encryption & HIPAA compliance</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4 p-4 glass-effect rounded-xl border border-border/50">
+              <div className="flex items-center justify-center size-10 rounded-lg bg-primary/20 shrink-0">
+                <Zap className="size-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Real-Time Access</h3>
+                <p className="text-sm text-muted-foreground">Instant updates across all departments</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4 p-4 glass-effect rounded-xl border border-border/50">
+              <div className="flex items-center justify-center size-10 rounded-lg bg-accent/20 shrink-0">
+                <Sparkles className="size-5 text-accent" />
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">AI-Powered Insights</h3>
+                <p className="text-sm text-muted-foreground">Smart analytics for better decisions</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Login Form */}
+        <div className="flex justify-center items-center animate-slide-in-right">
+          <Card className="w-full max-w-md glass-effect border-2 border-border/50 shadow-2xl">
+            <CardHeader className="space-y-3 text-center">
+              {/* Mobile Logo */}
+              <div className="lg:hidden flex justify-center mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center size-12 rounded-xl bg-linear-to-br from-primary to-accent shadow-lg">
+                    <Activity className="size-6 text-primary-foreground" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold gradient-text text-xl">MedFlow</div>
+                    <div className="text-xs text-muted-foreground">Insights</div>
+                  </div>
+                </div>
+              </div>
+              
+              <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
+              <CardDescription className="text-base">
+                Enter your credentials to access your account
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="space-y-4">
+              <Form {...form}>
+                <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <Label htmlFor="email" className="font-semibold">Email Address</Label>
+                        <FormControl>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
+                            <Input
+                              id="email"
+                              type="email"
+                              autoComplete="email"
+                              placeholder="you@hospital.com"
+                              className="pl-11 h-12 bg-background/50 border-2 focus:border-primary transition-colors"
+                              {...field}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <Label htmlFor="password" className="font-semibold">Password</Label>
+                        <FormControl>
+                          <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
+                            <Input
+                              id="password"
+                              type="password"
+                              autoComplete="current-password"
+                              placeholder="••••••••"
+                              className="pl-11 h-12 bg-background/50 border-2 focus:border-primary transition-colors"
+                              {...field}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <input type="checkbox" id="remember" className="size-4 rounded border-border" />
+                      <label htmlFor="remember" className="text-sm text-muted-foreground">
+                        Remember me
+                      </label>
+                    </div>
+                    <Link to="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+                      Forgot Password?
+                    </Link>
+                  </div>
+
+                  {errorMessage && (
+                    <Alert variant="destructive" className="animate-slide-in-bottom">
+                      <AlertDescription>{errorMessage}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <Button
+                    type="submit"
+                    className="w-full h-12 bg-linear-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg text-base font-semibold group"
+                    disabled={isPending}
+                  >
+                    {isPending ? (
+                      <span className="flex items-center gap-2">
+                        <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                        Signing in...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        Sign In
+                        <ArrowRight className="size-5 group-hover:translate-x-1 transition-transform" />
+                      </span>
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+            
+            <Separator />
+            
+            <CardFooter className="flex flex-col gap-4 pt-6">
+              <div className="text-center text-sm text-muted-foreground">
+                Don't have an account?{' '}
+                <Link to="/signup" className="font-semibold text-primary hover:underline">
+                  Sign up now
                 </Link>
               </div>
-              {errorMessage ? (
-                <div role="alert" className="text-sm text-destructive">
-                  {errorMessage}
-                </div>
-              ) : null}
-              <Button type="submit" className="w-full" disabled={isPending}>
-                {isPending ? 'Logging in…' : 'LOGIN'}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-        <Separator className="my-2" />
-        <CardFooter className="justify-center">
-          <span className="text-sm text-muted-foreground">Need an account?</span>
-          <Link to="/signup" className="ml-2 text-sm underline underline-offset-4 hover:text-primary">
-            Sign Up
-          </Link>
-        </CardFooter>
-      </Card>
+              <div className="text-center text-xs text-muted-foreground">
+                Protected by enterprise-grade security
+              </div>
+            </CardFooter>
+          </Card>
+        </div>
+      </div>
     </div>
   )
 }

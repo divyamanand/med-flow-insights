@@ -12,6 +12,8 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Clock, Filter, Edit2, Trash2, ChevronLeft, ChevronRight, Calendar, Users } from "lucide-react";
 
 // Weekday map
 const WEEKDAYS = [
@@ -92,23 +94,37 @@ export default function StaffTimingsOverview() {
 
   /* ---------------- UI ---------------- */
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <h1 className="text-2xl font-bold">Staff Timings Overview</h1>
+    <div className="flex flex-col gap-6 sm:gap-8 animate-slide-in-bottom">
+      {/* Enhanced Header */}
+      <div className="space-y-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+          <Clock className="size-4 text-primary" />
+          <span className="text-sm font-medium text-primary">Schedule Management</span>
+        </div>
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight gradient-text">
+          Staff Timings
+        </h1>
+      </div>
 
       {/* FILTER CARD */}
-      <Card>
+      <Card className="border-2 shadow-lg glass-effect">
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <div className="p-2 bg-accent/10 rounded-lg">
+              <Filter className="size-5 text-accent" />
+            </div>
+            Filters
+          </CardTitle>
         </CardHeader>
 
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
 
             {/* Role Filter */}
-            <div>
-              <label className="text-sm font-medium">Role</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Role</label>
               <Select value={role} onValueChange={setRole}>
-                <SelectTrigger>
+                <SelectTrigger className="border-2">
                   <SelectValue placeholder="Select Role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -123,10 +139,10 @@ export default function StaffTimingsOverview() {
             </div>
 
             {/* Specialty Filter */}
-            <div>
-              <label className="text-sm font-medium">Specialty</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Specialty</label>
               <Select value={specialtyId} onValueChange={setSpecialtyId}>
-                <SelectTrigger>
+                <SelectTrigger className="border-2">
                   <SelectValue placeholder="Select Specialty" />
                 </SelectTrigger>
                 <SelectContent>
@@ -139,10 +155,10 @@ export default function StaffTimingsOverview() {
             </div>
 
             {/* Weekday */}
-            <div>
-              <label className="text-sm font-medium">Weekday</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Weekday</label>
               <Select value={weekday} onValueChange={setWeekday}>
-                <SelectTrigger>
+                <SelectTrigger className="border-2">
                   <SelectValue placeholder="Select Day" />
                 </SelectTrigger>
                 <SelectContent>
@@ -157,66 +173,92 @@ export default function StaffTimingsOverview() {
             </div>
 
             {/* From Date */}
-            <div>
-              <label className="text-sm font-medium">From</label>
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">From</label>
+              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="border-2" />
             </div>
 
             {/* To Date */}
-            <div>
-              <label className="text-sm font-medium">To</label>
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">To</label>
+              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="border-2" />
             </div>
           </div>
 
           <div className="flex justify-end mt-4">
-            <Button onClick={() => timingsQ.refetch()}>Apply Filters</Button>
+            <Button onClick={() => timingsQ.refetch()} className="gap-2">
+              <Filter className="size-4" />
+              Apply Filters
+            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* TABLE */}
-      <Card>
+      <Card className="border-2 shadow-lg glass-effect">
         <CardHeader>
-          <CardTitle>Results</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Calendar className="size-5 text-primary" />
+            </div>
+            Schedule Results
+          </CardTitle>
         </CardHeader>
 
         <CardContent>
-          <div className="overflow-auto">
+          <div className="overflow-auto max-h-[500px]">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>#</TableHead>
-                  <TableHead>Staff Name</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Day</TableHead>
-                  <TableHead>Start</TableHead>
-                  <TableHead>End</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
+                <TableRow className="border-muted/50">
+                  <TableHead className="font-semibold">#</TableHead>
+                  <TableHead className="font-semibold">Staff Name</TableHead>
+                  <TableHead className="font-semibold">Role</TableHead>
+                  <TableHead className="font-semibold">Day</TableHead>
+                  <TableHead className="font-semibold">Start</TableHead>
+                  <TableHead className="font-semibold">End</TableHead>
+                  <TableHead className="font-semibold">Status</TableHead>
+                  <TableHead className="font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
 
               <TableBody>
                 {paged.map((r, idx) => (
-                  <TableRow key={r.id}>
-                    <TableCell>{start + idx + 1}</TableCell>
-                    <TableCell>{r.name}</TableCell>
-                    <TableCell>{r.role}</TableCell>
-                    <TableCell>{WEEKDAYS.find((d) => d.value === r.weekday)?.label}</TableCell>
-                    <TableCell>{r.startTime}</TableCell>
-                    <TableCell>{r.endTime}</TableCell>
+                  <TableRow key={r.id} className="hover:bg-muted/50 transition-colors border-muted/30">
+                    <TableCell className="font-mono text-sm text-muted-foreground">#{start + idx + 1}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Users className="size-4 text-muted-foreground" />
+                        <span className="font-medium">{r.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className="capitalize">{r.role}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="size-4 text-muted-foreground" />
+                        <span className="text-sm">{WEEKDAYS.find((d) => d.value === r.weekday)?.label}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{r.startTime}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{r.endTime}</TableCell>
                     <TableCell>
                       {r.isActive ? (
-                        <span className="text-green-600">Available</span>
+                        <Badge variant="default">Available</Badge>
                       ) : (
-                        <span className="text-red-600">Off Duty</span>
+                        <Badge variant="secondary">Off Duty</Badge>
                       )}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline">Edit</Button>
-                        <Button size="sm" variant="destructive">Remove</Button>
+                        <Button size="sm" variant="outline" className="gap-1">
+                          <Edit2 className="size-3" />
+                          Edit
+                        </Button>
+                        <Button size="sm" variant="destructive" className="gap-1">
+                          <Trash2 className="size-3" />
+                          Remove
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -224,7 +266,7 @@ export default function StaffTimingsOverview() {
 
                 {rows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-6">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       No timings found
                     </TableCell>
                   </TableRow>
@@ -235,8 +277,8 @@ export default function StaffTimingsOverview() {
 
           {/* Pagination */}
           <div className="flex justify-between items-center mt-4 text-sm">
-            <div>
-              Showing {rows.length === 0 ? 0 : start + 1}-{end} of {rows.length}
+            <div className="text-muted-foreground">
+              Showing <span className="font-semibold text-foreground">{rows.length === 0 ? 0 : start + 1}</span> to <span className="font-semibold text-foreground">{end}</span> of <span className="font-semibold text-foreground">{rows.length}</span> results
             </div>
 
             <div className="flex gap-2">
@@ -245,16 +287,20 @@ export default function StaffTimingsOverview() {
                 variant="outline"
                 disabled={page === 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="gap-1"
               >
-                {"<"}
+                <ChevronLeft className="size-4" />
+                Previous
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 disabled={end >= rows.length}
                 onClick={() => setPage((p) => p + 1)}
+                className="gap-1"
               >
-                {">"}
+                Next
+                <ChevronRight className="size-4" />
               </Button>
             </div>
           </div>

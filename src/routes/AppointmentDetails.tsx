@@ -5,6 +5,7 @@ import { format, parseISO } from "date-fns";
 
 import { api } from "@/lib/axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -24,7 +25,9 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { CalendarCheck, User, Stethoscope, Clock, FileText, Edit2, Trash2, CheckCircle, XCircle } from "lucide-react";
 
 /* ---------------- NEW TYPES (MATCH API EXACTLY) ---------------- */
 
@@ -112,137 +115,204 @@ export default function AppointmentDetails() {
   const appt = apptQ.data!;
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-6">
-      {/* 1. Status + Action Buttons */}
-      <Card>
+    <div className="flex flex-col gap-6 sm:gap-8 animate-slide-in-bottom">
+      {/* Enhanced Header */}
+      <div className="space-y-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+          <CalendarCheck className="size-4 text-primary" />
+          <span className="text-sm font-medium text-primary">Appointment Details</span>
+        </div>
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight gradient-text">
+          Appointment #{appt.id}
+        </h1>
+      </div>
+
+      {/* Status & Action Buttons */}
+      <Card className="border-2 border-border/50 shadow-lg glass-effect">
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-center gap-3">
-            <Select value={status} onValueChange={(v) => setStatusDemo(v)}>
-              <SelectTrigger className="min-w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {statuses.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Label className="font-semibold">Status:</Label>
+              <Select value={status} onValueChange={(v) => setStatusDemo(v)}>
+                <SelectTrigger className="min-w-40 border-2 focus:border-primary">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {statuses.map((s) => (
+                    <SelectItem key={s} value={s} className="capitalize">
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Button onClick={() => setStatusDemo("confirmed")}>Confirm</Button>
-            <Button onClick={() => setStatusDemo("checked-in")}>Check In</Button>
-            <Button onClick={() => setStatusDemo("completed")}>Complete</Button>
+            <Separator orientation="vertical" className="h-8" />
+
+            <Button onClick={() => setStatusDemo("confirmed")} variant="outline" className="gap-2">
+              <CheckCircle className="size-4" />
+              Confirm
+            </Button>
+            <Button onClick={() => setStatusDemo("checked-in")} variant="outline" className="gap-2">
+              <User className="size-4" />
+              Check In
+            </Button>
+            <Button onClick={() => setStatusDemo("completed")} variant="default" className="gap-2">
+              <CheckCircle className="size-4" />
+              Complete
+            </Button>
             <Button
               variant="destructive"
               onClick={() => setStatusDemo("cancelled")}
+              className="gap-2"
             >
+              <XCircle className="size-4" />
               Cancel
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* 2. Main 3-Column Layout */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      {/* 3-Column Layout */}
+      <div className="grid gap-6 lg:grid-cols-3">
         {/* Column 1 — Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Info</CardTitle>
+        <Card className="border-2 border-border/50 shadow-lg glass-effect">
+          <CardHeader className="border-b border-border/50 bg-linear-to-r from-primary/5 to-accent/5">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="size-5 text-primary" />
+              Appointment Info
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="pt-6 space-y-6">
             {/* Patient */}
             <section>
-              <div className="flex items-center justify-between">
-                <div className="font-medium">Patient</div>
-                <DemoEdit label="Edit Patient" />
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2 font-semibold">
+                  <User className="size-4 text-primary" />
+                  Patient
+                </div>
+                <DemoEdit label="Edit" />
               </div>
               <Separator className="my-2" />
-
-              <div className="text-sm">Name: {appt.patientName}</div>
-              <div className="text-sm">ID: {appt.patientId}</div>
-              <div className="text-sm">
-                Created: {format(parseISO(appt.createdAt), "PPp")}
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Name:</span>
+                  <span className="font-medium">{appt.patientName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">ID:</span>
+                  <span className="font-mono text-xs">{appt.patientId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Created:</span>
+                  <span className="text-xs">{format(parseISO(appt.createdAt), "PPp")}</span>
+                </div>
               </div>
             </section>
 
             {/* Doctor */}
             <section>
-              <div className="flex items-center justify-between">
-                <div className="font-medium">Doctor</div>
-                <DemoEdit label="Edit Doctor" />
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2 font-semibold">
+                  <Stethoscope className="size-4 text-accent" />
+                  Doctor
+                </div>
+                <DemoEdit label="Edit" />
               </div>
               <Separator className="my-2" />
-
-              <div className="text-sm">Name: Dr {appt.doctorName}</div>
-              <div className="text-sm">ID: {appt.doctorId}</div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Name:</span>
+                  <span className="font-medium">Dr {appt.doctorName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">ID:</span>
+                  <span className="font-mono text-xs">{appt.doctorId}</span>
+                </div>
+              </div>
             </section>
 
             {/* Time */}
             <section>
-              <div className="flex items-center justify-between">
-                <div className="font-medium">Time Window</div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2 font-semibold">
+                  <Clock className="size-4 text-primary" />
+                  Time Window
+                </div>
                 <DemoEdit
-                  label="Edit Time"
+                  label="Edit"
                   time
                   initial={{ startAt: appt.startAt, endAt: appt.endAt }}
                 />
               </div>
               <Separator className="my-2" />
-
-              <div className="text-sm">
-                Start: {format(parseISO(appt.startAt), "PPp")}
-              </div>
-              <div className="text-sm">
-                End: {format(parseISO(appt.endAt), "PPp")}
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Start:</span>
+                  <Badge variant="outline">{format(parseISO(appt.startAt), "PPp")}</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">End:</span>
+                  <Badge variant="outline">{format(parseISO(appt.endAt), "PPp")}</Badge>
+                </div>
               </div>
             </section>
 
             {/* Issues */}
             <section>
-              <div className="font-medium">Issues</div>
+              <div className="font-semibold mb-2">Issues</div>
               <Separator className="my-2" />
               {appt.issues ? (
-                <div className="text-sm">{appt.issues}</div>
+                <div className="text-sm bg-muted/50 p-3 rounded-lg">{appt.issues}</div>
               ) : (
-                <div className="text-sm text-muted-foreground">No issues</div>
+                <div className="text-sm text-muted-foreground italic">No issues reported</div>
               )}
             </section>
           </CardContent>
         </Card>
 
         {/* Column 2 — Audit Log */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Audit Log</CardTitle>
+        <Card className="border-2 border-border/50 shadow-lg glass-effect">
+          <CardHeader className="border-b border-border/50 bg-linear-to-r from-primary/5 to-accent/5">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="size-5 text-primary" />
+              Audit Log
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="max-h-80 overflow-auto text-sm space-y-2">
+          <CardContent className="pt-6">
+            <div className="max-h-96 overflow-auto space-y-3">
               {logs.map((l, i) => (
-                <p key={i}>
-                  <span className="text-muted-foreground">
-                    {format(parseISO(l.ts), "yyyy-MM-dd HH:mm")}
-                  </span>{" "}
-                  — {l.text}
-                </p>
+                <div key={i} className="flex gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                  <div className="size-2 rounded-full bg-primary mt-2 shrink-0" />
+                  <div className="flex-1 text-sm">
+                    <div className="text-muted-foreground text-xs mb-1">
+                      {format(parseISO(l.ts), "yyyy-MM-dd HH:mm")}
+                    </div>
+                    <div>{l.text}</div>
+                  </div>
+                </div>
               ))}
             </div>
           </CardContent>
         </Card>
 
         {/* Column 3 — Controls */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Controls</CardTitle>
+        <Card className="border-2 border-border/50 shadow-lg glass-effect">
+          <CardHeader className="border-b border-border/50 bg-linear-to-r from-primary/5 to-accent/5">
+            <CardTitle className="flex items-center gap-2">
+              <Edit2 className="size-5 text-primary" />
+              Controls
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="pt-6 space-y-3">
             <DemoEdit label="Edit Appointment" full />
             <DemoEdit
-              label="Doctor/Time"
+              label="Update Doctor/Time"
               time
               initial={{ startAt: appt.startAt, endAt: appt.endAt }}
             />
             <DemoJsonPatch />
+            <Separator />
             <DemoDelete hard />
           </CardContent>
         </Card>
@@ -270,7 +340,12 @@ function DemoEdit({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant={full ? "default" : "ghost"} size={full ? "default" : "sm"}>
+        <Button 
+          variant={full ? "default" : "ghost"} 
+          size={full ? "default" : "sm"}
+          className={full ? "w-full" : ""}
+        >
+          {!full && <Edit2 className="size-4 mr-1" />}
           {label}
         </Button>
       </DialogTrigger>
@@ -283,27 +358,29 @@ function DemoEdit({
         <div className="grid gap-3">
           {time ? (
             <>
-              <div>
-                <label className="text-sm">Start At</label>
+              <div className="space-y-2">
+                <Label className="font-semibold">Start At</Label>
                 <Input
                   type="datetime-local"
                   value={startAt}
                   onChange={(e) => setStartAt(e.target.value)}
+                  className="border-2"
                 />
               </div>
-              <div>
-                <label className="text-sm">End At</label>
+              <div className="space-y-2">
+                <Label className="font-semibold">End At</Label>
                 <Input
                   type="datetime-local"
                   value={endAt}
                   onChange={(e) => setEndAt(e.target.value)}
+                  className="border-2"
                 />
               </div>
             </>
           ) : (
             <>
-              <label className="text-sm">Notes</label>
-              <Textarea placeholder="Update notes (demo)" />
+              <Label className="font-semibold">Notes</Label>
+              <Textarea placeholder="Update notes (demo)" className="min-h-32" />
             </>
           )}
         </div>
@@ -350,7 +427,8 @@ function DemoDelete({ hard }: { hard?: boolean }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant={hard ? "destructive" : "outline"}>
+        <Button variant={hard ? "destructive" : "outline"} className="w-full gap-2">
+          <Trash2 className="size-4" />
           {hard ? "Hard Delete (Admin Only)" : "Delete"}
         </Button>
       </DialogTrigger>
@@ -362,11 +440,12 @@ function DemoDelete({ hard }: { hard?: boolean }) {
           </DialogTitle>
         </DialogHeader>
 
-        <p className="text-sm">Are you sure?</p>
+        <p className="text-sm">Are you sure you want to proceed? This action cannot be undone.</p>
 
         <DialogFooter>
           <Button variant="ghost">Cancel</Button>
-          <Button variant={hard ? "destructive" : "default"}>
+          <Button variant={hard ? "destructive" : "default"} className="gap-2">
+            <Trash2 className="size-4" />
             {hard ? "Hard Delete" : "Delete"}
           </Button>
         </DialogFooter>
