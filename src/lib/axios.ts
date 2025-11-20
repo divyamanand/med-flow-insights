@@ -1,15 +1,6 @@
 import axios from 'axios'
 
-// Determine base URL. In production (HTTPS) avoid direct http:// IP to prevent mixed content.
-// Use relative /api which Vercel rewrites to the backend.
-const raw = import.meta.env.VITE_API_BASE_URL
-let baseURL = raw || 'http://13.201.19.12'
-if (typeof window !== 'undefined') {
-  const isHttps = window.location.protocol === 'https:'
-  if (isHttps && baseURL.startsWith('http://')) {
-    baseURL = '/api'
-  }
-}
+const baseURL = import.meta.env.VITE_API_BASE_URL || "https://hospitalapi.isdiv.in"
 
 export const http = axios.create({
   baseURL: baseURL || '/',
