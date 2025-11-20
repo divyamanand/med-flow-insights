@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || "http://13.201.19.12"
+const baseURL = import.meta.env.VITE_API_BASE_URL || "https://hospitalapi.isdiv.in"
 
 export const http = axios.create({
   baseURL: baseURL || '/',
