@@ -380,8 +380,73 @@ export default function StaffDirectory() {
 /* ---------------- Dialogs ---------------- */
 
 function AddStaffDialog() {
+  const qc = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const [email, setEmail] = useState('')
+  const [role, setRole] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [gender, setGender] = useState('')
+  const [phone, setPhone] = useState('')
+  const [notes, setNotes] = useState('')
+
+  type CreateStaffInput = {
+    email?: string
+    password?: string
+    role: string
+    firstName?: string
+    lastName?: string
+    dateOfBirth?: string
+    gender?: string
+    phone?: string
+    notes?: string
+  }
+
+  const createMut = useMutation({
+    mutationFn: async (payload: CreateStaffInput) => {
+      return api.post('/staff', payload)
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['staff'] })
+      setOpen(false)
+      // Reset form
+      setEmail('')
+      setRole('')
+      setFirstName('')
+      setLastName('')
+      setDateOfBirth('')
+      setGender('')
+      setPhone('')
+      setNotes('')
+    },
+  })
+
+  const canSubmit = !!role
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!canSubmit) return
+    const password = dateOfBirth.replace(/-/g, '')
+    const payload: CreateStaffInput = {
+      role,
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
+      dateOfBirth: dateOfBirth || undefined,
+      gender: gender || undefined,
+      phone: phone || undefined,
+      notes: notes || undefined,
+    }
+    // Only include email/password if both provided
+    if (email && password) {
+      payload.email = email
+      payload.password = password
+    }
+    createMut.mutate(payload)
+  }
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="gap-2">
           <UserPlus className="size-4" />
@@ -389,39 +454,101 @@ function AddStaffDialog() {
         </Button>
       </DialogTrigger>
 
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="size-5 text-primary" />
-            Add Staff Member (Demo)
+            Add Staff Member
           </DialogTitle>
           <DialogDescription>
-            Register a new staff member in the directory.
+            Register a new staff member. Email & password are optional for creating login credentials.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4">
+        <form onSubmit={onSubmit} className="grid gap-4">
+          {/* Role (Required) */}
           <div>
-            <Label className="font-semibold">Name</Label>
-            <Input placeholder="Alice Admin" className="border-2" />
+            <Label className="font-semibold">Role <span className="text-destructive">*</span></Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger className="border-2">
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                {roleOptions.map((r) => (
+                  <SelectItem key={r} value={r} className="capitalize">
+                    {r}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div>
-            <Label className="font-semibold">Role</Label>
-            <Input placeholder="doctor" className="border-2" />
-          </div>
-          <div>
-            <Label className="font-semibold">Phone</Label>
-            <Input placeholder="+1 555 0101" className="border-2" />
-          </div>
-          <div>
-            <Label className="font-semibold">Email</Label>
-            <Input placeholder="email@example.com" className="border-2" />
-          </div>
-        </div>
 
-        <DialogFooter>
-          <Button>Save (Demo)</Button>
-        </DialogFooter>
+          {/* Name Fields */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label className="font-semibold">First Name</Label>
+              <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Alice" className="border-2" />
+            </div>
+            <div>
+              <Label className="font-semibold">Last Name</Label>
+              <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Admin" className="border-2" />
+            </div>
+          </div>
+
+          {/* Login Credentials (Optional) */}
+          <div className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-3">
+            <p className="text-xs font-medium text-muted-foreground">Login Credentials (Optional)</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label className="font-semibold">Email</Label>
+                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="alice@hospital.com" className="border-2" />
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Fields */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label className="font-semibold">Phone</Label>
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 555 0101" className="border-2" />
+            </div>
+            <div>
+              <Label className="font-semibold">Date of Birth</Label>
+              <Input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} className="border-2" />
+            </div>
+          </div>
+
+          <div>
+            <Label className="font-semibold">Gender</Label>
+            <Select value={gender} onValueChange={setGender}>
+              <SelectTrigger className="border-2">
+                <SelectValue placeholder="Select gender" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="male">Male</SelectItem>
+                <SelectItem value="female">Female</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label className="font-semibold">Notes</Label>
+            <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Additional notes..." className="border-2" />
+          </div>
+
+          {createMut.isError && (
+            <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg border border-destructive/20">
+              {(createMut.error as Error)?.message ?? 'Failed to create staff member'}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={createMut.isPending}>Cancel</Button>
+            <Button type="submit" disabled={!canSubmit || createMut.isPending}>
+              {createMut.isPending ? 'Creating…' : 'Create Staff Member'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )
