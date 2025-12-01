@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { Link } from "react-router-dom";
 
@@ -35,7 +35,9 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { Label } from "@/components/ui/label";
-import { CalendarDays, CalendarCheck, Plus, Filter, Search as SearchIcon, Sparkles, Clock, User, UserRound, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CalendarDays, CalendarCheck, Plus, Filter, Search as SearchIcon, Sparkles, Clock, User, UserRound, XCircle, ChevronLeft, ChevronRight, AlertCircle, Stethoscope, Calendar } from "lucide-react";
 
 /* ---------------- Types ---------------- */
 
@@ -91,7 +93,7 @@ export default function AppointmentsList() {
         status: status || undefined,
         search: patientSearch || undefined,
         from: from || undefined,
-        timeframe,
+        timeframe: from ? timeframe : undefined,
       }),
   });
 
@@ -224,25 +226,7 @@ export default function AppointmentsList() {
 
           {/* Add New Button */}
           <div className="flex justify-end pt-2">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="size-4" />
-                  Add Appointment
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add Appointment (Demo)</DialogTitle>
-                  <DialogDescription>
-                    Create a new appointment for a patient.
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <Button>Save (Demo)</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <CreateAppointmentDialog />
           </div>
         </CardContent>
       </Card>
@@ -332,10 +316,21 @@ export default function AppointmentsList() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <RowActions />
+                          <RowActions appointment={a} />
                         </TableCell>
                       </TableRow>
                     ))}
+                    {paged.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-12">
+                          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <CalendarDays className="size-12 opacity-20" />
+                            <p className="text-lg font-medium">No appointments found</p>
+                            <p className="text-sm">Try adjusting your filters or create a new appointment</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -418,66 +413,834 @@ export default function AppointmentsList() {
 
 /* ------------------- Misc Components ------------------- */
 
-function RowActions() {
+function RowActions({ appointment }: { appointment: Appointment }) {
   return (
     <div className="flex items-center gap-2">
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button variant="ghost" size="sm">
-            View
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>View Appointment (Demo)</DialogTitle>
-            <DialogDescription>
-              View appointment details and information.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button variant="ghost" size="sm">
-            Edit
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Appointment (Demo)</DialogTitle>
-            <DialogDescription>
-              Modify the appointment details below.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button variant="ghost" size="sm">
-            Delete
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Appointment (Demo)</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this appointment? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost">Cancel</Button>
-            <Button variant="destructive">Delete</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ViewAppointmentDialog appointment={appointment} />
+      <EditAppointmentDialog appointment={appointment} />
+      <DeleteAppointmentDialog appointment={appointment} />
     </div>
+  );
+}
+
+function ViewAppointmentDialog({ appointment }: { appointment: Appointment }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm">
+          View
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CalendarCheck className="size-5 text-primary" />
+            Appointment Details
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="grid gap-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Patient</Label>
+              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                <User className="size-4 text-primary" />
+                <span className="font-medium">{appointment.patientName}</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Doctor</Label>
+              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                <UserRound className="size-4 text-accent" />
+                <span className="font-medium">{appointment.doctorName}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Start Time</Label>
+              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                <Clock className="size-4" />
+                <span className="text-sm">{format(parseISO(appointment.startAt), "PPp")}</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">End Time</Label>
+              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                <Clock className="size-4" />
+                <span className="text-sm">{format(parseISO(appointment.endAt), "PPp")}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Status</Label>
+            <div className="flex items-center gap-2">
+              <Badge
+                variant={
+                  appointment.status === "scheduled"
+                    ? "default"
+                    : appointment.status === "completed"
+                    ? "outline"
+                    : "secondary"
+                }
+                className="capitalize"
+              >
+                {appointment.status}
+              </Badge>
+            </div>
+          </div>
+
+          {appointment.issues && (
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Health Issues</Label>
+              <div className="p-3 bg-muted/50 rounded text-sm">
+                {appointment.issues}
+              </div>
+            </div>
+          )}
+
+          <div className="grid gap-3 sm:grid-cols-2 text-xs text-muted-foreground">
+            <div>
+              <span className="font-medium">Created:</span> {format(parseISO(appointment.createdAt), "PPp")}
+            </div>
+            <div>
+              <span className="font-medium">Updated:</span> {format(parseISO(appointment.updatedAt), "PPp")}
+            </div>
+          </div>
+
+          {/* Status Transition Buttons */}
+          <div className="flex flex-wrap gap-2 pt-2 border-t">
+            <StatusTransitionButtons appointment={appointment} onSuccess={() => setOpen(false)} />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditAppointmentDialog({ appointment }: { appointment: Appointment }) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  
+  const [status, setStatus] = useState(appointment.status);
+  const [startAt, setStartAt] = useState(appointment.startAt.slice(0, 16));
+  const [endAt, setEndAt] = useState(appointment.endAt.slice(0, 16));
+  const [issuesText, setIssuesText] = useState(appointment.issues || "");
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return api.put(`/appointments/${appointment.id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      setOpen(false);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const payload: any = {
+      status,
+      startAt: new Date(startAt).toISOString(),
+      endAt: new Date(endAt).toISOString(),
+    };
+
+    if (issuesText.trim()) {
+      payload.issues = issuesText.trim();
+    }
+
+    updateMutation.mutate(payload);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm">
+          Edit
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CalendarCheck className="size-5 text-primary" />
+            Edit Appointment
+          </DialogTitle>
+          <DialogDescription>
+            Modify the appointment details below.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="grid gap-4">
+          {updateMutation.isError && (
+            <Alert variant="destructive">
+              <AlertCircle className="size-4" />
+              <AlertDescription>
+                {(updateMutation.error as any)?.response?.data?.message ||
+                  (updateMutation.error as Error)?.message ||
+                  "Failed to update appointment"}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-2">
+            <Label className="font-semibold">Status</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="border-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((s) => (
+                  <SelectItem key={s} value={s} className="capitalize">
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label className="font-semibold">Start Time</Label>
+              <Input
+                type="datetime-local"
+                className="border-2"
+                value={startAt}
+                onChange={(e) => setStartAt(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold">End Time</Label>
+              <Input
+                type="datetime-local"
+                className="border-2"
+                value={endAt}
+                onChange={(e) => setEndAt(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="font-semibold">Issues / Health Concerns</Label>
+            <Textarea
+              className="border-2 min-h-[80px]"
+              value={issuesText}
+              onChange={(e) => setIssuesText(e.target.value)}
+              placeholder="Health concerns or issues"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setOpen(false)}
+              disabled={updateMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? (
+                <>
+                  <Spinner className="size-4" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeleteAppointmentDialog({ appointment }: { appointment: Appointment }) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      if (reason.trim()) {
+        return api.post(`/appointments/${appointment.id}/cancel`, { reason });
+      }
+      return api.delete(`/appointments/${appointment.id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      setOpen(false);
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm">
+          Cancel
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <XCircle className="size-5 text-destructive" />
+            Cancel Appointment
+          </DialogTitle>
+          <DialogDescription>
+            Are you sure you want to cancel this appointment? This action will update the status to cancelled.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4">
+          {cancelMutation.isError && (
+            <Alert variant="destructive">
+              <AlertCircle className="size-4" />
+              <AlertDescription>
+                {(cancelMutation.error as any)?.response?.data?.message ||
+                  (cancelMutation.error as Error)?.message ||
+                  "Failed to cancel appointment"}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-2">
+            <Label className="font-semibold">Cancellation Reason (Optional)</Label>
+            <Textarea
+              className="border-2 min-h-[80px]"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Enter reason for cancellation..."
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="ghost"
+            onClick={() => setOpen(false)}
+            disabled={cancelMutation.isPending}
+          >
+            Keep Appointment
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => cancelMutation.mutate()}
+            disabled={cancelMutation.isPending}
+          >
+            {cancelMutation.isPending ? (
+              <>
+                <Spinner className="size-4" />
+                Cancelling...
+              </>
+            ) : (
+              "Cancel Appointment"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function StatusTransitionButtons({ appointment, onSuccess }: { appointment: Appointment; onSuccess?: () => void }) {
+  const queryClient = useQueryClient();
+
+  const transitionMutation = useMutation({
+    mutationFn: async (action: string) => {
+      return api.post(`/appointments/${appointment.id}/${action}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      onSuccess?.();
+    },
+  });
+
+  const canConfirm = appointment.status === "scheduled";
+  const canCheckin = appointment.status === "confirmed";
+  const canComplete = appointment.status === "confirmed" || appointment.status === "scheduled";
+
+  return (
+    <>
+      {canConfirm && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => transitionMutation.mutate("confirm")}
+          disabled={transitionMutation.isPending}
+          className="gap-1"
+        >
+          {transitionMutation.isPending ? <Spinner className="size-3" /> : <CalendarCheck className="size-3" />}
+          Confirm
+        </Button>
+      )}
+      {canCheckin && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => transitionMutation.mutate("checkin")}
+          disabled={transitionMutation.isPending}
+          className="gap-1"
+        >
+          {transitionMutation.isPending ? <Spinner className="size-3" /> : <User className="size-3" />}
+          Check In
+        </Button>
+      )}
+      {canComplete && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => transitionMutation.mutate("complete")}
+          disabled={transitionMutation.isPending}
+          className="gap-1"
+        >
+          {transitionMutation.isPending ? <Spinner className="size-3" /> : <CalendarCheck className="size-3" />}
+          Mark Complete
+        </Button>
+      )}
+    </>
+  );
+}
+
+/* ------------------- Create Appointment Component ------------------- */
+
+type MatchingDoctor = {
+  doctorId: string;
+  score: number;
+  specialties: Array<{ id: string; name: string }>;
+};
+
+type TimeSlot = {
+  startDatetime: string;
+  endDatetime: string;
+  slotDurationMinutes: number;
+};
+
+function CreateAppointmentDialog() {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  
+  // Step 1: Choose booking method
+  const [bookingMethod, setBookingMethod] = useState<"issues" | "doctor" | null>(null);
+  
+  // Step 2: Issues-based flow
+  const [issuesText, setIssuesText] = useState("");
+  const [matchingDoctors, setMatchingDoctors] = useState<MatchingDoctor[]>([]);
+  
+  // Step 3: Doctor selection
+  const [selectedDoctorId, setSelectedDoctorId] = useState("");
+  
+  // Step 4: Date selection for slots
+  const [selectedDate, setSelectedDate] = useState("");
+  
+  // Step 5: Slot selection
+  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+  
+  // Step 6: Patient ID (optional)
+  const [patientId, setPatientId] = useState("");
+
+  // Find matching doctors mutation
+  const findDoctorsMut = useMutation({
+    mutationFn: async (issues: string[]) => {
+      return api.post<MatchingDoctor[]>("/appointments/findMatchingDoctorsForIssues", { issues });
+    },
+    onSuccess: (data) => {
+      setMatchingDoctors(data);
+    },
+  });
+
+  // Fetch available slots query
+  const slotsQuery = useQuery<TimeSlot[]>({
+    queryKey: ["appointments", "slots", selectedDoctorId, selectedDate],
+    queryFn: () => 
+      api.get<TimeSlot[]>(`/appointments/doctor/${selectedDoctorId}/next3Slots`, {
+        date: selectedDate || undefined,
+      }),
+    enabled: !!selectedDoctorId && bookingMethod !== null,
+  });
+
+  // Create appointment mutation
+  const createMutation = useMutation({
+    mutationFn: async (data: {
+      patientId?: string;
+      doctorId?: string;
+      startAt: string;
+      endAt: string;
+      issues?: string[];
+    }) => {
+      return api.post("/appointments", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      handleReset();
+      setOpen(false);
+    },
+  });
+
+  const handleFindDoctors = () => {
+    const issues = issuesText
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+    
+    if (issues.length === 0) return;
+    findDoctorsMut.mutate(issues);
+  };
+
+  const handleBookAppointment = () => {
+    if (!selectedSlot) return;
+
+    const issues = issuesText
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    const payload: {
+      patientId?: string;
+      doctorId?: string;
+      startAt: string;
+      endAt: string;
+      issues?: string[];
+    } = {
+      startAt: selectedSlot.startDatetime,
+      endAt: selectedSlot.endDatetime,
+    };
+
+    if (patientId) payload.patientId = patientId;
+    if (selectedDoctorId) payload.doctorId = selectedDoctorId;
+    if (issues.length > 0) payload.issues = issues;
+
+    createMutation.mutate(payload);
+  };
+
+  const handleReset = () => {
+    setBookingMethod(null);
+    setIssuesText("");
+    setMatchingDoctors([]);
+    setSelectedDoctorId("");
+    setSelectedDate("");
+    setSelectedSlot(null);
+    setPatientId("");
+  };
+
+  const handleBack = () => {
+    if (selectedSlot) {
+      setSelectedSlot(null);
+    } else if (selectedDoctorId && slotsQuery.data) {
+      setSelectedDoctorId("");
+      setSelectedDate("");
+    } else if (matchingDoctors.length > 0) {
+      setMatchingDoctors([]);
+    } else {
+      setBookingMethod(null);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      setOpen(isOpen);
+      if (!isOpen) handleReset();
+    }}>
+      <DialogTrigger asChild>
+        <Button className="gap-2">
+          <Plus className="size-4" />
+          Add Appointment
+        </Button>
+      </DialogTrigger>
+      
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CalendarDays className="size-5 text-primary" />
+            Book New Appointment
+          </DialogTitle>
+          <DialogDescription>
+            {!bookingMethod && "Choose how you'd like to book an appointment"}
+            {bookingMethod === "issues" && !matchingDoctors.length && "Tell us your health concerns"}
+            {bookingMethod === "issues" && matchingDoctors.length > 0 && !selectedDoctorId && "Choose a doctor from recommendations"}
+            {bookingMethod === "doctor" && !selectedDoctorId && "Enter doctor ID directly"}
+            {selectedDoctorId && !selectedSlot && "Select an available time slot"}
+            {selectedSlot && "Confirm appointment details"}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4">
+          {/* Error Display */}
+          {(findDoctorsMut.isError || createMutation.isError) && (
+            <Alert variant="destructive">
+              <AlertCircle className="size-4" />
+              <AlertDescription>
+                {(findDoctorsMut.error as any)?.response?.data?.message ||
+                  (createMutation.error as any)?.response?.data?.message ||
+                  (findDoctorsMut.error as Error)?.message ||
+                  (createMutation.error as Error)?.message ||
+                  "An error occurred"}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Step 1: Choose Booking Method */}
+          {!bookingMethod && (
+            <div className="grid gap-3">
+              <Button
+                variant="outline"
+                className="h-auto p-4 flex flex-col items-start gap-2 hover:border-primary hover:bg-primary/5"
+                onClick={() => setBookingMethod("issues")}
+              >
+                <div className="flex items-center gap-2">
+                  <Sparkles className="size-5 text-primary" />
+                  <span className="font-semibold text-lg">Tell Us Your Issues</span>
+                </div>
+                <p className="text-sm text-muted-foreground text-left">
+                  Describe your health concerns and we'll find the best matching doctors for you
+                </p>
+              </Button>
+
+              <Button
+                variant="outline"
+                className="h-auto p-4 flex flex-col items-start gap-2 hover:border-primary hover:bg-primary/5"
+                onClick={() => setBookingMethod("doctor")}
+              >
+                <div className="flex items-center gap-2">
+                  <Stethoscope className="size-5 text-primary" />
+                  <span className="font-semibold text-lg">Search Doctor</span>
+                </div>
+                <p className="text-sm text-muted-foreground text-left">
+                  Already know which doctor? Enter their ID directly
+                </p>
+              </Button>
+            </div>
+          )}
+
+          {/* Step 2a: Issues Input (AI Matching) */}
+          {bookingMethod === "issues" && matchingDoctors.length === 0 && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="font-semibold">Health Concerns / Issues</Label>
+                <Textarea
+                  className="border-2 min-h-[120px]"
+                  value={issuesText}
+                  onChange={(e) => setIssuesText(e.target.value)}
+                  placeholder="Enter your health concerns (one per line)&#10;e.g.,&#10;Persistent headache&#10;High blood pressure&#10;Chest pain"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter one issue per line. We'll match you with the best doctors.
+                </p>
+              </div>
+
+              <Button
+                onClick={handleFindDoctors}
+                disabled={!issuesText.trim() || findDoctorsMut.isPending}
+                className="w-full gap-2"
+              >
+                {findDoctorsMut.isPending ? (
+                  <>
+                    <Spinner className="size-4" />
+                    Finding Doctors...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="size-4" />
+                    Find Matching Doctors
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+
+          {/* Step 2b: Matching Doctors List */}
+          {bookingMethod === "issues" && matchingDoctors.length > 0 && !selectedDoctorId && (
+            <div className="space-y-3">
+              <Label className="font-semibold">Recommended Doctors</Label>
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {matchingDoctors.map((doc) => (
+                  <button
+                    key={doc.doctorId}
+                    onClick={() => setSelectedDoctorId(doc.doctorId)}
+                    className="w-full p-3 border-2 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Stethoscope className="size-4 text-primary" />
+                        <span className="font-medium">Doctor ID: {doc.doctorId.slice(0, 8)}...</span>
+                      </div>
+                      <Badge variant="outline">Match: {(doc.score * 100).toFixed(0)}%</Badge>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {doc.specialties.map((spec) => (
+                        <Badge key={spec.id} variant="secondary" className="text-xs">
+                          {spec.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Step 2c: Direct Doctor ID Input */}
+          {bookingMethod === "doctor" && !selectedDoctorId && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="font-semibold">Doctor ID</Label>
+                <Input
+                  className="border-2"
+                  placeholder="Enter doctor ID"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const value = (e.target as HTMLInputElement).value;
+                      if (value.trim()) setSelectedDoctorId(value.trim());
+                    }
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Press Enter after typing the doctor ID
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Date Selection + Available Slots */}
+          {selectedDoctorId && !selectedSlot && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="font-semibold">Select Date (Optional)</Label>
+                <Input
+                  type="date"
+                  className="border-2"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Leave empty to see next available slots
+                </p>
+              </div>
+
+              {slotsQuery.isLoading && (
+                <div className="flex items-center gap-2 justify-center py-4">
+                  <Spinner className="size-4" />
+                  <span className="text-sm">Loading available slots...</span>
+                </div>
+              )}
+
+              {slotsQuery.data && slotsQuery.data.length === 0 && (
+                <Alert>
+                  <AlertCircle className="size-4" />
+                  <AlertDescription>
+                    No available slots found. Try selecting a different date.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {slotsQuery.data && slotsQuery.data.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="font-semibold">Available Time Slots</Label>
+                  <div className="space-y-2">
+                    {slotsQuery.data.map((slot, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedSlot(slot)}
+                        className="w-full p-3 border-2 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-left"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Clock className="size-4 text-primary" />
+                            <span className="font-medium">
+                              {format(parseISO(slot.startDatetime), "PPp")}
+                            </span>
+                          </div>
+                          <Badge variant="outline">{slot.slotDurationMinutes} min</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Ends at {format(parseISO(slot.endDatetime), "p")}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 4: Confirmation + Patient ID */}
+          {selectedSlot && (
+            <div className="space-y-4">
+              <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg space-y-2">
+                <Label className="font-semibold">Selected Slot</Label>
+                <div className="flex items-center gap-2">
+                  <Clock className="size-4 text-primary" />
+                  <span className="text-sm">
+                    {format(parseISO(selectedSlot.startDatetime), "PPp")} - {format(parseISO(selectedSlot.endDatetime), "p")}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="font-semibold">
+                  Patient ID
+                  <span className="text-xs text-muted-foreground ml-2">
+                    (Optional - leave empty to book for yourself)
+                  </span>
+                </Label>
+                <Input
+                  className="border-2"
+                  value={patientId}
+                  onChange={(e) => setPatientId(e.target.value)}
+                  placeholder="Enter patient ID or leave empty"
+                />
+              </div>
+
+              <Button
+                onClick={handleBookAppointment}
+                disabled={createMutation.isPending}
+                className="w-full gap-2"
+              >
+                {createMutation.isPending ? (
+                  <>
+                    <Spinner className="size-4" />
+                    Booking...
+                  </>
+                ) : (
+                  <>
+                    <CalendarCheck className="size-4" />
+                    Confirm Booking
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          {bookingMethod && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleBack}
+              disabled={findDoctorsMut.isPending || createMutation.isPending}
+            >
+              Back
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setOpen(false)}
+            disabled={findDoctorsMut.isPending || createMutation.isPending}
+          >
+            Cancel
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

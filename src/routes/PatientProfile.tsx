@@ -37,7 +37,19 @@ type PatientResponse = {
   primaryPhysician?: { id: string; name?: string } | null
 }
 
-type Appointment = { id: string; doctorId?: string; startAt: string; status: string }
+type Appointment = {
+  id: string
+  patientId: string | null
+  doctorId: string | null
+  patientName: string | null
+  doctorName: string | null
+  startAt: Date
+  endAt: Date
+  status: string
+  issues: string[]
+  createdAt: Date
+  updatedAt: Date
+}
 type PrescriptionItem = { id: string; name: string; dosage?: string }
 type Prescription = { id: string; doctorId?: string; nextReview?: string; items?: PrescriptionItem[] }
 
@@ -52,7 +64,7 @@ export default function PatientProfile() {
 
   const apptsQuery = useQuery<Appointment[]>({
     queryKey: ['patients', id, 'appointments'],
-    queryFn: () => api.get<Appointment[]>(`/patients/${id}/appointments`),
+    queryFn: () => api.get<Appointment[]>(`/appointments/patient/${id}`),
     enabled: !!id,
   })
 
@@ -286,9 +298,9 @@ export default function PatientProfile() {
                     <TableRow key={a.id} className="hover:bg-muted/50 transition-colors border-muted/30">
                       <TableCell className="flex items-center gap-2">
                         <Calendar className="size-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">{a.startAt ? format(parseISO(a.startAt), 'PPp') : '-'}</span>
+                        <span className="text-sm text-muted-foreground">{a.startAt ? format(parseISO(a.startAt.toString()), 'PPp') : '-'}</span>
                       </TableCell>
-                      <TableCell className="text-sm">{a.doctorId ? `Dr ${a.doctorId}` : '-'}</TableCell>
+                      <TableCell className="text-sm">{a.doctorName ? `Dr. ${a.doctorName}` : (a.doctorId ? `Dr ${a.doctorId}` : '-')}</TableCell>
                       <TableCell>
                         <Badge className="capitalize">{a.status}</Badge>
                       </TableCell>

@@ -60,7 +60,19 @@ type Leave = {
   createdAt: string
   updatedAt: string
 }
-type Appointment = { id: string; patientId: string; doctorId: string; startAt: string; status: string }
+type Appointment = {
+  id: string
+  patientId: string | null
+  doctorId: string | null
+  patientName: string | null
+  doctorName: string | null
+  startAt: Date
+  endAt: Date
+  status: string
+  issues: string[]
+  createdAt: Date
+  updatedAt: Date
+}
 
 const weekday = (n: number) => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][n] ?? String(n)
 
@@ -88,7 +100,7 @@ export default function StaffProfile() {
   const role = staffQuery.data?.role
   const appointmentsQuery = useQuery<Appointment[]>({
     queryKey: ['staff', id, 'appointments'],
-    queryFn: () => api.get<Appointment[]>(`/staff/${id}/appointments`),
+    queryFn: () => api.get<Appointment[]>(`/appointments/doctor/${id}`),
     enabled: !!id && role === 'doctor',
   })
 
@@ -356,13 +368,21 @@ export default function StaffProfile() {
                   <TableBody>
                     {(appointmentsQuery.data ?? []).map((a) => (
                       <TableRow key={a.id} className="hover:bg-muted/50 transition-colors border-muted/30">
-                        <TableCell className="text-sm text-muted-foreground">{format(parseISO(a.startAt), 'PPp')}</TableCell>
-                        <TableCell className="font-mono text-sm">#{a.patientId}</TableCell>
+                        <TableCell className="flex items-center gap-2">
+                          <Calendar className="size-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">{a.startAt ? format(parseISO(a.startAt.toString()), 'PPp') : '-'}</span>
+                        </TableCell>
+                        <TableCell className="text-sm">{a.patientName ? a.patientName : (a.patientId ? `#${a.patientId}` : '-')}</TableCell>
                         <TableCell>
                           <Badge className="capitalize">{a.status}</Badge>
                         </TableCell>
                       </TableRow>
                     ))}
+                    {(appointmentsQuery.data ?? []).length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center text-muted-foreground">No appointments found.</TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </div>
