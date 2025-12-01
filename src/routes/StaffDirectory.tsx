@@ -629,9 +629,15 @@ function EditStaffDialog({ staff }: { staff: Staff }) {
     avatarUrl?: string | null
   }
 
-  const { data, isLoading } = useQuery<UserDetail>({
+  const { data: userData, isLoading: userLoading } = useQuery<UserDetail>({
     queryKey: ['user', staff.userId, 'detail'],
     queryFn: () => api.get<UserDetail>(`/users/${staff.userId}`),
+    enabled: open,
+  })
+
+  const { data: staffData, isLoading: staffLoading } = useQuery<Staff>({
+    queryKey: ['staff', staff.id, 'detail'],
+    queryFn: () => api.get<Staff>(`/staff/${staff.id}`),
     enabled: open,
   })
 
@@ -641,24 +647,33 @@ function EditStaffDialog({ staff }: { staff: Staff }) {
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [gender, setGender] = useState<string>('')
   const [avatarUrl, setAvatarUrl] = useState('')
+  const [notes, setNotes] = useState('')
+  const [email, setEmail] = useState('')
 
   useEffect(() => {
-    if (data) {
-      setFirstName(data.firstName ?? (staff.name.split(' ')[0] ?? ''))
-      setLastName(data.lastName ?? (staff.name.split(' ').slice(1).join(' ') ?? ''))
-      setPhone(data.phone ?? (staff.phone ?? ''))
-      setDateOfBirth(data.dateOfBirth ?? '')
-      setGender((data.gender ?? '').toString())
-      setAvatarUrl(data.avatarUrl ?? '')
+    if (userData) {
+      setFirstName(userData.firstName ?? (staff.name.split(' ')[0] ?? ''))
+      setLastName(userData.lastName ?? (staff.name.split(' ').slice(1).join(' ') ?? ''))
+      setPhone(userData.phone ?? (staff.phone ?? ''))
+      setDateOfBirth(userData.dateOfBirth ?? '')
+      setGender((userData.gender ?? '').toString())
+      setAvatarUrl(userData.avatarUrl ?? '')
+      setEmail(userData.email ?? '')
     } else {
       // fallback from staff row
       setFirstName(staff.name.split(' ')[0] ?? '')
       setLastName(staff.name.split(' ').slice(1).join(' ') ?? '')
       setPhone(staff.phone ?? '')
+      setEmail(staff.email ?? '')
     }
-  }, [data, staff])
+    if (staffData) {
+      setNotes(staffData.notes ?? '')
+    } else {
+      setNotes(staff.notes ?? '')
+    }
+  }, [userData, staffData, staff])
 
-  const updateMut = useMutation({
+  const updateUserMut = useMutation({
     mutationFn: async () => {
       const body: Record<string, string> = {}
       if (firstName) body.firstName = firstName
@@ -669,16 +684,35 @@ function EditStaffDialog({ staff }: { staff: Staff }) {
       if (avatarUrl) body.avatarUrl = avatarUrl
       return api.put(`/users/${staff.userId}`, body)
     },
+  })
+
+  const updateStaffMut = useMutation({
+    mutationFn: async () => {
+      const body: Record<string, string> = {}
+      if (notes !== undefined) body.notes = notes
+      return api.put(`/staff/${staff.id}`, body)
+    },
+  })
+
+  const updateMut = useMutation({
+    mutationFn: async () => {
+      await Promise.all([
+        updateUserMut.mutateAsync(),
+        updateStaffMut.mutateAsync(),
+      ])
+    },
     onSuccess: async () => {
       await Promise.all([
         qc.invalidateQueries({ queryKey: ['staff'] }),
         qc.invalidateQueries({ queryKey: ['user', staff.userId, 'detail'] }),
+        qc.invalidateQueries({ queryKey: ['staff', staff.id, 'detail'] }),
       ])
       setOpen(false)
     },
   })
 
-  const canSave = !!firstName || !!lastName || !!phone || !!dateOfBirth || !!gender || !!avatarUrl
+  const isLoading = userLoading || staffLoading
+  const canSave = true
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -720,6 +754,13 @@ function EditStaffDialog({ staff }: { staff: Staff }) {
                 <Input value={lastName} onChange={(e) => setLastName(e.target.value)} className="border-2" />
               </div>
             </div>
+
+            <div>
+              <Label className="font-semibold">Email</Label>
+              <Input type="email" value={email} disabled className="border-2 bg-muted cursor-not-allowed" />
+              <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
+            </div>
+
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <Label className="font-semibold">Phone</Label>
@@ -733,12 +774,26 @@ function EditStaffDialog({ staff }: { staff: Staff }) {
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <Label className="font-semibold">Gender</Label>
-                <Input placeholder="male | female | other" value={gender} onChange={(e) => setGender(e.target.value)} className="border-2" />
+                <Select value={gender} onValueChange={setGender}>
+                  <SelectTrigger className="border-2">
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label className="font-semibold">Avatar URL</Label>
-                <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} className="border-2" />
+                <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} className="border-2" placeholder="https://..." />
               </div>
+            </div>
+
+            <div>
+              <Label className="font-semibold">Notes</Label>
+              <Input value={notes} onChange={(e) => setNotes(e.target.value)} className="border-2" placeholder="Additional notes..." />
             </div>
 
             {updateMut.isError && (

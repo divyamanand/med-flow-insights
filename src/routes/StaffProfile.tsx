@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -43,6 +44,8 @@ type Timing = {
   weekday: number
   startTime: string
   endTime: string
+  isAvailable: boolean
+  notes: string | null
   createdAt: string
   updatedAt: string
 }
@@ -53,6 +56,7 @@ type Leave = {
   endDate: string
   reason: string
   status: 'pending' | 'approved' | 'rejected'
+  notes: string | null
   createdAt: string
   updatedAt: string
 }
@@ -165,39 +169,7 @@ export default function StaffProfile() {
               </div>
             </div>
             <div className="flex flex-col gap-2">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="gap-2">
-                    <Edit2 className="size-4" />
-                    Edit Staff
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="border-2 shadow-2xl">
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                      <Edit2 className="size-5 text-primary" />
-                      Edit Staff (Demo)
-                    </DialogTitle>
-                    <DialogDescription>Modify local values only.</DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4">
-                    <div className="space-y-2">
-                      <Label className="font-semibold">Phone</Label>
-                      <Input className="border-2" value={localStaff?.phone ?? ''} onChange={(e) => setLocalStaff((p) => (p ? { ...p, phone: e.target.value } : p))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="font-semibold">Email</Label>
-                      <Input className="border-2" value={localStaff?.email ?? ''} onChange={(e) => setLocalStaff((p) => (p ? { ...p, email: e.target.value } : p))} />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button className="gap-2">
-                      <Save className="size-4" />
-                      Save (Demo)
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <EditStaffDialog staff={localStaff} staffId={id} />
             </div>
           </div>
         </CardContent>
@@ -267,7 +239,7 @@ export default function StaffProfile() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(timingsQuery.data ?? []).map((t) => (
+                    {(timingsQuery.data ?? []).sort((a, b) => a.weekday - b.weekday).map((t) => (
                       <TableRow key={t.id} className="hover:bg-muted/50 transition-colors border-muted/30">
                         <TableCell className="flex items-center gap-2">
                           <Calendar className="size-4 text-muted-foreground" />
@@ -275,6 +247,14 @@ export default function StaffProfile() {
                         </TableCell>
                         <TableCell className="text-sm">{t.startTime}</TableCell>
                         <TableCell className="text-sm">{t.endTime}</TableCell>
+                        <TableCell>
+                          {t.isAvailable ? (
+                            <Badge variant="default">Yes</Badge>
+                          ) : (
+                            <Badge variant="secondary">No</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{t.notes ?? '-'}</TableCell>
                         <TableCell className="whitespace-nowrap">
                           <TimingActionButtons timing={t} staffId={id} />
                         </TableCell>
@@ -317,11 +297,12 @@ export default function StaffProfile() {
                       <TableHead className="font-semibold">End Date</TableHead>
                       <TableHead className="font-semibold">Reason</TableHead>
                       <TableHead className="font-semibold">Status</TableHead>
+                      <TableHead className="font-semibold">Notes</TableHead>
                       <TableHead className="font-semibold">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(leavesQuery.data ?? []).map((l) => (
+                    {(leavesQuery.data ?? []).sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()).map((l) => (
                       <TableRow key={l.id} className="hover:bg-muted/50 transition-colors border-muted/30">
                         <TableCell className="text-sm text-muted-foreground">{l.startDate}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{l.endDate}</TableCell>
@@ -331,6 +312,7 @@ export default function StaffProfile() {
                           {l.status === 'pending' && <Badge variant="secondary">Pending</Badge>}
                           {l.status === 'rejected' && <Badge variant="destructive">Rejected</Badge>}
                         </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{l.notes ?? '-'}</TableCell>
                         <TableCell className="whitespace-nowrap"><LeaveActionButtons leave={l} staffId={id} /></TableCell>
                       </TableRow>
                     ))}
@@ -420,17 +402,20 @@ function SpecialtyChip({ s, staffId }: { s: Specialty; staffId: string }) {
 
 function AddSpecialtyDialog({ staffId }: { staffId: string }) {
   const [open, setOpen] = useState(false)
-  const [specialtyName, setSpecialtyName] = useState('')
+  const [searchKeyword, setSearchKeyword] = useState('')
+  const [selectedSpecialty, setSelectedSpecialty] = useState<{ id: string; name: string } | null>(null)
   const [primary, setPrimary] = useState(false)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
-  const [showError, setShowError] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
   
   const queryClient = useQueryClient()
   
-  // Fetch all available specialties to check if specialty exists
-  const allSpecialtiesQuery = useQuery<Specialty[]>({
-    queryKey: ['specialties'],
-    queryFn: () => api.get<Specialty[]>('/specialties'),
+  // Search specialties from API as user types
+  type SearchResult = { id: string; name: string }
+  const searchQuery = useQuery<SearchResult[]>({
+    queryKey: ['specialties', 'search', searchKeyword],
+    queryFn: () => api.get<SearchResult[]>('/specialties/search', { keyword: searchKeyword || undefined }),
+    enabled: open && searchKeyword.length > 0,
   })
 
   const assignMutation = useMutation({
@@ -439,39 +424,35 @@ function AddSpecialtyDialog({ staffId }: { staffId: string }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff', staffId, 'specialties'] })
       setOpen(false)
-      setSpecialtyName('')
+      setSearchKeyword('')
+      setSelectedSpecialty(null)
       setPrimary(false)
-      setShowError(false)
     }
   })
 
-  const handleAddSpecialty = () => {
-    if (!specialtyName.trim()) return
-    
-    // Find specialty by name (case-insensitive)
-    const specialty = (allSpecialtiesQuery.data ?? []).find(
-      s => s.name.toLowerCase() === specialtyName.trim().toLowerCase()
-    )
-    
-    if (!specialty) {
-      // Specialty not found - show error
-      setShowError(true)
-      return
-    }
-    
-    // Specialty found - assign it
-    setShowError(false)
-    assignMutation.mutate({ specialtyId: specialty.id, primary })
+  const handleAssignSpecialty = () => {
+    if (!selectedSpecialty) return
+    assignMutation.mutate({ specialtyId: selectedSpecialty.id, primary })
   }
+
+  const handleSelectSpecialty = (specialty: SearchResult) => {
+    setSelectedSpecialty(specialty)
+    setSearchKeyword(specialty.name)
+    setShowDropdown(false)
+  }
+
+  const searchResults = searchQuery.data ?? []
+  const noResultsFound = searchKeyword.length > 0 && !searchQuery.isLoading && searchResults.length === 0
 
   return (
     <>
       <Dialog open={open} onOpenChange={(isOpen) => {
         setOpen(isOpen)
         if (!isOpen) {
-          setShowError(false)
-          setSpecialtyName('')
+          setSearchKeyword('')
+          setSelectedSpecialty(null)
           setPrimary(false)
+          setShowDropdown(false)
         }
       }}>
         <DialogTrigger asChild>
@@ -486,6 +467,9 @@ function AddSpecialtyDialog({ staffId }: { staffId: string }) {
               <Plus className="size-5 text-primary" />
               Assign Specialty
             </DialogTitle>
+            <DialogDescription>
+              Search and select a specialty to assign to this staff member.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
             {assignMutation.error && (
@@ -496,41 +480,86 @@ function AddSpecialtyDialog({ staffId }: { staffId: string }) {
                 </AlertDescription>
               </Alert>
             )}
-            {showError && (
-              <Alert variant="destructive">
-                <AlertCircle className="size-4" />
-                <AlertDescription className="flex items-center justify-between">
-                  <span>Specialty "{specialtyName}" not found in database</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="ml-2 gap-1 border-background"
+            
+            <div className="space-y-2 relative">
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <Label className="font-semibold">Search Specialty</Label>
+                  <div className="relative">
+                    <Input
+                      className="border-2 pr-10"
+                      value={searchKeyword}
+                      onChange={(e) => {
+                        setSearchKeyword(e.target.value)
+                        setSelectedSpecialty(null)
+                        setShowDropdown(true)
+                      }}
+                      onFocus={() => setShowDropdown(true)}
+                      placeholder="Type to search (e.g., cardio)"
+                    />
+                    {noResultsFound && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-2 gap-1 text-primary hover:text-primary"
+                        onClick={() => setShowCreateDialog(true)}
+                      >
+                        <Plus className="size-3" />
+                        Add
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Search Results Dropdown */}
+              {showDropdown && searchKeyword.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-background border-2 rounded-lg shadow-lg max-h-60 overflow-auto">
+                  {searchQuery.isLoading ? (
+                    <div className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
+                      <Spinner className="size-4" />
+                      Searching...
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    <div className="py-1">
+                      {searchResults.map((specialty) => (
+                        <button
+                          key={specialty.id}
+                          onClick={() => handleSelectSpecialty(specialty)}
+                          className="w-full text-left px-3 py-2 hover:bg-muted transition-colors text-sm"
+                        >
+                          {specialty.name}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 text-sm text-muted-foreground text-center">
+                      No specialties found for "{searchKeyword}"
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {selectedSpecialty && (
+                <div className="flex items-center gap-2 p-2 bg-primary/10 border border-primary/20 rounded-lg">
+                  <Badge variant="default">{selectedSpecialty.name}</Badge>
+                  <button
                     onClick={() => {
-                      setShowCreateDialog(true)
-                      setShowError(false)
+                      setSelectedSpecialty(null)
+                      setSearchKeyword('')
                     }}
+                    className="ml-auto text-muted-foreground hover:text-foreground"
                   >
-                    <Plus className="size-3" />
-                    Create
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            )}
-            <div className="space-y-2">
-              <Label className="font-semibold">Specialty Name</Label>
-              <Input
-                className="border-2"
-                value={specialtyName}
-                onChange={(e) => {
-                  setSpecialtyName(e.target.value)
-                  setShowError(false)
-                }}
-                placeholder="e.g., Cardiology"
-              />
+                    <X className="size-4" />
+                  </button>
+                </div>
+              )}
+              
               <p className="text-xs text-muted-foreground">
-                Enter the specialty name. If not found, you'll be prompted to create it.
+                Type keywords to search. Click "Add" if not found to create a new specialty.
               </p>
             </div>
+            
             <div className="flex items-center gap-2">
               <input 
                 id="primary-spec" 
@@ -546,9 +575,15 @@ function AddSpecialtyDialog({ staffId }: { staffId: string }) {
           </div>
           <DialogFooter>
             <Button
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
               className="gap-2"
-              disabled={!specialtyName.trim() || assignMutation.isPending}
-              onClick={handleAddSpecialty}
+              disabled={!selectedSpecialty || assignMutation.isPending}
+              onClick={handleAssignSpecialty}
             >
               {assignMutation.isPending ? <Spinner className="size-4" /> : <Save className="size-4" />}
               Assign
@@ -557,24 +592,18 @@ function AddSpecialtyDialog({ staffId }: { staffId: string }) {
         </DialogContent>
       </Dialog>
       
-      {/* Create specialty dialog triggered from error */}
+      {/* Create specialty dialog */}
       {showCreateDialog && (
         <CreateSpecialtyDialog 
           open={showCreateDialog}
-          initialName={specialtyName}
+          initialName={searchKeyword}
           onOpenChange={setShowCreateDialog}
-          onSuccess={() => {
-            allSpecialtiesQuery.refetch()
+          onSuccess={(newSpecialty) => {
             setShowCreateDialog(false)
-            // After creating, try to assign again
-            setTimeout(() => {
-              const specialty = allSpecialtiesQuery.data?.find(
-                s => s.name.toLowerCase() === specialtyName.trim().toLowerCase()
-              )
-              if (specialty) {
-                assignMutation.mutate({ specialtyId: specialty.id, primary })
-              }
-            }, 500)
+            // Automatically select the newly created specialty
+            setSelectedSpecialty(newSpecialty)
+            setSearchKeyword(newSpecialty.name)
+            queryClient.invalidateQueries({ queryKey: ['specialties', 'search'] })
           }}
         />
       )}
@@ -590,7 +619,7 @@ function CreateSpecialtyDialog({
 }: { 
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSuccess: () => void
+  onSuccess: (newSpecialty: { id: string; name: string }) => void
   initialName?: string
 }) {
   const [code, setCode] = useState('')
@@ -606,10 +635,10 @@ function CreateSpecialtyDialog({
   
   const createMutation = useMutation({
     mutationFn: (data: { code: string; name: string; description?: string }) => 
-      api.post('/specialties', data),
-    onSuccess: () => {
+      api.post<{ id: string; name: string }>('/specialties', data),
+    onSuccess: (newSpecialty) => {
       queryClient.invalidateQueries({ queryKey: ['specialties'] })
-      onSuccess()
+      onSuccess(newSpecialty)
       setCode('')
       setName('')
       setDescription('')
@@ -745,11 +774,13 @@ function AddTimingDialog({ staffId }: { staffId: string }) {
   const [weekday, setWeekday] = useState('1')
   const [startTime, setStartTime] = useState('09:00:00')
   const [endTime, setEndTime] = useState('17:00:00')
+  const [isAvailable, setIsAvailable] = useState(true)
+  const [notes, setNotes] = useState('')
   
   const queryClient = useQueryClient()
   
   const createMutation = useMutation({
-    mutationFn: (data: { weekday: number; startTime: string; endTime: string }) => 
+    mutationFn: (data: { weekday: number; startTime: string; endTime: string; isAvailable?: boolean; notes?: string }) => 
       api.post(`/staff/${staffId}/timings/single`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff', staffId, 'timings'] })
@@ -757,6 +788,8 @@ function AddTimingDialog({ staffId }: { staffId: string }) {
       setWeekday('1')
       setStartTime('09:00:00')
       setEndTime('17:00:00')
+      setIsAvailable(true)
+      setNotes('')
     }
   })
 
@@ -808,7 +841,7 @@ function AddTimingDialog({ staffId }: { staffId: string }) {
               step="1"
               className="border-2" 
               value={startTime} 
-              onChange={(e) => setStartTime(e.target.value + ':00')} 
+              onChange={(e) => setStartTime(e.target.value)} 
             />
           </div>
           <div className="space-y-2">
@@ -818,7 +851,28 @@ function AddTimingDialog({ staffId }: { staffId: string }) {
               step="1"
               className="border-2" 
               value={endTime} 
-              onChange={(e) => setEndTime(e.target.value + ':00')} 
+              onChange={(e) => setEndTime(e.target.value)} 
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <input 
+              id="is-available" 
+              type="checkbox" 
+              checked={isAvailable} 
+              onChange={(e) => setIsAvailable(e.target.checked)} 
+              className="size-4" 
+            />
+            <Label htmlFor="is-available" className="font-medium cursor-pointer">
+              Staff is available during this time
+            </Label>
+          </div>
+          <div className="space-y-2">
+            <Label className="font-semibold">Notes</Label>
+            <Textarea 
+              className="border-2" 
+              value={notes} 
+              onChange={(e) => setNotes(e.target.value)} 
+              placeholder="Optional notes about this timing"
             />
           </div>
         </div>
@@ -829,7 +883,9 @@ function AddTimingDialog({ staffId }: { staffId: string }) {
             onClick={() => createMutation.mutate({ 
               weekday: parseInt(weekday), 
               startTime, 
-              endTime 
+              endTime,
+              isAvailable,
+              notes: notes.trim() || undefined
             })}
           >
             {createMutation.isPending ? <Spinner className="size-4" /> : <Save className="size-4" />}
@@ -846,11 +902,13 @@ function EditTimingDialog({ timing, staffId }: { timing: Timing; staffId: string
   const [weekday, setWeekday] = useState(String(timing.weekday))
   const [startTime, setStartTime] = useState(timing.startTime)
   const [endTime, setEndTime] = useState(timing.endTime)
+  const [isAvailable, setIsAvailable] = useState(timing.isAvailable)
+  const [notes, setNotes] = useState(timing.notes ?? '')
   
   const queryClient = useQueryClient()
   
   const updateMutation = useMutation({
-    mutationFn: (data: { weekday?: number; startTime?: string; endTime?: string }) => 
+    mutationFn: (data: { weekday?: number; startTime?: string; endTime?: string; isAvailable?: boolean; notes?: string }) => 
       api.put(`/staff/${staffId}/timings/${timing.id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff', staffId, 'timings'] })
@@ -904,8 +962,8 @@ function EditTimingDialog({ timing, staffId }: { timing: Timing; staffId: string
               type="time" 
               step="1"
               className="border-2" 
-              value={startTime.slice(0, 5)} 
-              onChange={(e) => setStartTime(e.target.value + ':00')} 
+              value={startTime.slice(0, 8)} 
+              onChange={(e) => setStartTime(e.target.value)} 
             />
           </div>
           <div className="space-y-2">
@@ -914,8 +972,29 @@ function EditTimingDialog({ timing, staffId }: { timing: Timing; staffId: string
               type="time" 
               step="1"
               className="border-2" 
-              value={endTime.slice(0, 5)} 
-              onChange={(e) => setEndTime(e.target.value + ':00')} 
+              value={endTime.slice(0, 8)} 
+              onChange={(e) => setEndTime(e.target.value)} 
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <input 
+              id="edit-is-available" 
+              type="checkbox" 
+              checked={isAvailable} 
+              onChange={(e) => setIsAvailable(e.target.checked)} 
+              className="size-4" 
+            />
+            <Label htmlFor="edit-is-available" className="font-medium cursor-pointer">
+              Staff is available during this time
+            </Label>
+          </div>
+          <div className="space-y-2">
+            <Label className="font-semibold">Notes</Label>
+            <Textarea 
+              className="border-2" 
+              value={notes} 
+              onChange={(e) => setNotes(e.target.value)} 
+              placeholder="Optional notes about this timing"
             />
           </div>
         </div>
@@ -926,7 +1005,9 @@ function EditTimingDialog({ timing, staffId }: { timing: Timing; staffId: string
             onClick={() => updateMutation.mutate({ 
               weekday: parseInt(weekday), 
               startTime, 
-              endTime 
+              endTime,
+              isAvailable,
+              notes: notes.trim() || undefined
             })}
           >
             {updateMutation.isPending ? <Spinner className="size-4" /> : <Save className="size-4" />}
@@ -968,18 +1049,18 @@ function DeleteTimingButton({ timingId, staffId }: { timingId: string; staffId: 
 
 function BulkUploadTimingsDialog({ staffId }: { staffId: string }) {
   const [open, setOpen] = useState(false)
-  const [timings, setTimings] = useState<Array<{ weekday: number; startTime: string; endTime: string }>>([
-    { weekday: 1, startTime: '09:00:00', endTime: '17:00:00' },
-    { weekday: 2, startTime: '09:00:00', endTime: '17:00:00' },
-    { weekday: 3, startTime: '09:00:00', endTime: '17:00:00' },
-    { weekday: 4, startTime: '09:00:00', endTime: '17:00:00' },
-    { weekday: 5, startTime: '09:00:00', endTime: '17:00:00' },
+  const [timings, setTimings] = useState<Array<{ weekday: number; startTime: string; endTime: string; isAvailable: boolean }>>([
+    { weekday: 1, startTime: '09:00:00', endTime: '17:00:00', isAvailable: true },
+    { weekday: 2, startTime: '09:00:00', endTime: '17:00:00', isAvailable: true },
+    { weekday: 3, startTime: '09:00:00', endTime: '17:00:00', isAvailable: true },
+    { weekday: 4, startTime: '09:00:00', endTime: '17:00:00', isAvailable: true },
+    { weekday: 5, startTime: '09:00:00', endTime: '17:00:00', isAvailable: true },
   ])
   
   const queryClient = useQueryClient()
   
   const bulkMutation = useMutation({
-    mutationFn: (data: Array<{ weekday: number; startTime: string; endTime: string }>) => 
+    mutationFn: (data: Array<{ weekday: number; startTime: string; endTime: string; isAvailable?: boolean }>) => 
       api.post(`/staff/${staffId}/timings`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff', staffId, 'timings'] })
@@ -1015,7 +1096,7 @@ function BulkUploadTimingsDialog({ staffId }: { staffId: string }) {
             </Alert>
           )}
           {timings.map((t, idx) => (
-            <div key={idx} className="grid grid-cols-3 gap-2 p-3 border-2 rounded-md">
+            <div key={idx} className="grid grid-cols-4 gap-2 p-3 border-2 rounded-md">
               <div className="space-y-1">
                 <Label className="text-xs">Day</Label>
                 <select
@@ -1062,13 +1143,28 @@ function BulkUploadTimingsDialog({ staffId }: { staffId: string }) {
                   }} 
                 />
               </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Available</Label>
+                <div className="flex items-center h-8">
+                  <input 
+                    type="checkbox" 
+                    checked={t.isAvailable}
+                    onChange={(e) => {
+                      const updated = [...timings]
+                      updated[idx].isAvailable = e.target.checked
+                      setTimings(updated)
+                    }}
+                    className="size-4" 
+                  />
+                </div>
+              </div>
             </div>
           ))}
           <Button
             variant="outline"
             size="sm"
             className="gap-2"
-            onClick={() => setTimings([...timings, { weekday: 1, startTime: '09:00:00', endTime: '17:00:00' }])}
+            onClick={() => setTimings([...timings, { weekday: 1, startTime: '09:00:00', endTime: '17:00:00', isAvailable: true }])}
           >
             <Plus className="size-3" />
             Add Day
@@ -1105,11 +1201,12 @@ function AddLeaveDialog({ staffId }: { staffId: string }) {
   const [endDate, setEndDate] = useState('')
   const [reason, setReason] = useState('')
   const [status, setStatus] = useState<'pending' | 'approved' | 'rejected'>('pending')
+  const [notes, setNotes] = useState('')
   
   const queryClient = useQueryClient()
   
   const createMutation = useMutation({
-    mutationFn: (data: { startDate: string; endDate: string; reason: string; status: string }) => 
+    mutationFn: (data: { startDate: string; endDate: string; reason: string; status: string; notes?: string }) => 
       api.post(`/staff/${staffId}/leaves`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff', staffId, 'leaves'] })
@@ -1118,6 +1215,7 @@ function AddLeaveDialog({ staffId }: { staffId: string }) {
       setEndDate('')
       setReason('')
       setStatus('pending')
+      setNotes('')
     }
   })
 
@@ -1185,12 +1283,27 @@ function AddLeaveDialog({ staffId }: { staffId: string }) {
               <option value="rejected">Rejected</option>
             </select>
           </div>
+          <div className="space-y-2">
+            <Label className="font-semibold">Notes</Label>
+            <Textarea 
+              className="border-2" 
+              value={notes} 
+              onChange={(e) => setNotes(e.target.value)} 
+              placeholder="Optional additional notes"
+            />
+          </div>
         </div>
         <DialogFooter>
           <Button
             className="gap-2"
             disabled={!startDate || !endDate || !reason.trim() || createMutation.isPending}
-            onClick={() => createMutation.mutate({ startDate, endDate, reason, status })}
+            onClick={() => createMutation.mutate({ 
+              startDate, 
+              endDate, 
+              reason, 
+              status,
+              notes: notes.trim() || undefined
+            })}
           >
             {createMutation.isPending ? <Spinner className="size-4" /> : <Save className="size-4" />}
             Submit
@@ -1207,11 +1320,12 @@ function EditLeaveDialog({ leave, staffId }: { leave: Leave; staffId: string }) 
   const [endDate, setEndDate] = useState(leave.endDate.split('T')[0])
   const [reason, setReason] = useState(leave.reason)
   const [status, setStatus] = useState<'pending' | 'approved' | 'rejected'>(leave.status)
+  const [notes, setNotes] = useState(leave.notes ?? '')
   
   const queryClient = useQueryClient()
   
   const updateMutation = useMutation({
-    mutationFn: (data: { startDate?: string; endDate?: string; reason?: string; status?: string }) => 
+    mutationFn: (data: { startDate?: string; endDate?: string; reason?: string; status?: string; notes?: string }) => 
       api.put(`/staff/${staffId}/leaves/${leave.id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff', staffId, 'leaves'] })
@@ -1281,12 +1395,27 @@ function EditLeaveDialog({ leave, staffId }: { leave: Leave; staffId: string }) 
               <option value="rejected">Rejected</option>
             </select>
           </div>
+          <div className="space-y-2">
+            <Label className="font-semibold">Notes</Label>
+            <Textarea 
+              className="border-2" 
+              value={notes} 
+              onChange={(e) => setNotes(e.target.value)} 
+              placeholder="Optional additional notes"
+            />
+          </div>
         </div>
         <DialogFooter>
           <Button
             className="gap-2"
             disabled={updateMutation.isPending}
-            onClick={() => updateMutation.mutate({ startDate, endDate, reason, status })}
+            onClick={() => updateMutation.mutate({ 
+              startDate, 
+              endDate, 
+              reason, 
+              status,
+              notes: notes.trim() || undefined
+            })}
           >
             {updateMutation.isPending ? <Spinner className="size-4" /> : <Save className="size-4" />}
             Update
@@ -1322,5 +1451,208 @@ function DeleteLeaveButton({ leaveId, staffId }: { leaveId: string; staffId: str
       {deleteMutation.isPending ? <Spinner className="size-3" /> : <X className="size-3" />}
       Delete
     </Button>
+  )
+}
+
+function EditStaffDialog({ staff, staffId }: { staff: Staff | null; staffId: string }) {
+  const qc = useQueryClient()
+  const [open, setOpen] = useState(false)
+
+  type UserDetail = {
+    id: string
+    email: string
+    role: string
+    type: string
+    firstName: string | null
+    lastName: string | null
+    dateOfBirth: string | null
+    gender: string | null
+    phone: string | null
+    avatarUrl?: string | null
+  }
+
+  const { data: userData, isLoading: userLoading } = useQuery<UserDetail>({
+    queryKey: ['user', staff?.userId, 'detail'],
+    queryFn: () => api.get<UserDetail>(`/users/${staff?.userId}`),
+    enabled: open && !!staff?.userId,
+  })
+
+  const { data: staffData, isLoading: staffLoading } = useQuery<Staff>({
+    queryKey: ['staff', staffId, 'detail'],
+    queryFn: () => api.get<Staff>(`/staff/${staffId}`),
+    enabled: open,
+  })
+
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [gender, setGender] = useState<string>('')
+  const [avatarUrl, setAvatarUrl] = useState('')
+  const [notes, setNotes] = useState('')
+  const [email, setEmail] = useState('')
+
+  useEffect(() => {
+    if (userData) {
+      setFirstName(userData.firstName ?? (staff?.firstName ?? ''))
+      setLastName(userData.lastName ?? (staff?.lastName ?? ''))
+      setPhone(userData.phone ?? (staff?.phone ?? ''))
+      setDateOfBirth(userData.dateOfBirth ?? '')
+      setGender((userData.gender ?? '').toString())
+      setAvatarUrl(userData.avatarUrl ?? '')
+      setEmail(userData.email ?? '')
+    } else if (staff) {
+      setFirstName(staff.firstName ?? '')
+      setLastName(staff.lastName ?? '')
+      setPhone(staff.phone ?? '')
+      setEmail(staff.email ?? '')
+    }
+    if (staffData) {
+      setNotes(staffData.notes ?? '')
+    } else if (staff) {
+      setNotes(staff.notes ?? '')
+    }
+  }, [userData, staffData, staff])
+
+  const updateUserMut = useMutation({
+    mutationFn: async () => {
+      if (!staff?.userId) return
+      const body: Record<string, string> = {}
+      if (firstName) body.firstName = firstName
+      if (lastName) body.lastName = lastName
+      if (phone) body.phone = phone
+      if (dateOfBirth) body.dateOfBirth = dateOfBirth
+      if (gender) body.gender = gender
+      if (avatarUrl) body.avatarUrl = avatarUrl
+      return api.put(`/users/${staff.userId}`, body)
+    },
+  })
+
+  const updateStaffMut = useMutation({
+    mutationFn: async () => {
+      const body: Record<string, string> = {}
+      if (notes !== undefined) body.notes = notes
+      return api.put(`/staff/${staffId}`, body)
+    },
+  })
+
+  const updateMut = useMutation({
+    mutationFn: async () => {
+      await Promise.all([
+        updateUserMut.mutateAsync(),
+        updateStaffMut.mutateAsync(),
+      ])
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['staff', staffId] }),
+        qc.invalidateQueries({ queryKey: ['user', staff?.userId, 'detail'] }),
+        qc.invalidateQueries({ queryKey: ['staff', staffId, 'detail'] }),
+      ])
+      setOpen(false)
+    },
+  })
+
+  const isLoading = userLoading || staffLoading
+  const canSave = true
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="gap-2">
+          <Edit2 className="size-4" />
+          Edit Staff
+        </Button>
+      </DialogTrigger>
+
+      <DialogContent className="max-h-[90vh] overflow-y-auto border-2 shadow-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Edit2 className="size-5 text-primary" />
+            Edit Staff Member
+          </DialogTitle>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="flex items-center gap-2 text-sm py-8 justify-center">
+            <Spinner className="size-4" /> Loading staff details...
+          </div>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (!canSave) return
+              updateMut.mutate()
+            }}
+            className="grid gap-4"
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label className="font-semibold">First Name</Label>
+                <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} className="border-2" />
+              </div>
+              <div>
+                <Label className="font-semibold">Last Name</Label>
+                <Input value={lastName} onChange={(e) => setLastName(e.target.value)} className="border-2" />
+              </div>
+            </div>
+
+            <div>
+              <Label className="font-semibold">Email</Label>
+              <Input type="email" value={email} disabled className="border-2 bg-muted cursor-not-allowed" />
+              <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label className="font-semibold">Phone</Label>
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="border-2" />
+              </div>
+              <div>
+                <Label className="font-semibold">Date of Birth</Label>
+                <Input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} className="border-2" />
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label className="font-semibold">Gender</Label>
+                <Select value={gender} onValueChange={setGender}>
+                  <SelectTrigger className="border-2">
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="font-semibold">Avatar URL</Label>
+                <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} className="border-2" placeholder="https://..." />
+              </div>
+            </div>
+
+            <div>
+              <Label className="font-semibold">Notes</Label>
+              <Input value={notes} onChange={(e) => setNotes(e.target.value)} className="border-2" placeholder="Additional notes..." />
+            </div>
+
+            {updateMut.isError && (
+              <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg border border-destructive/20">
+                {(updateMut.error as Error)?.message ?? 'Update failed'}
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={updateMut.isPending}>Cancel</Button>
+              <Button type="submit" disabled={!canSave || updateMut.isPending}>
+                {updateMut.isPending ? 'Saving…' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }
