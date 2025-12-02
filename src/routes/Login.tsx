@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Separator } from '@/components/ui/separator'
-import { Activity, Lock, Mail, ArrowRight, Sparkles, Shield, Zap } from 'lucide-react'
+import { Activity, Lock, Mail, ArrowRight, Sparkles, Shield, Zap, UserCog, User, ShieldCheck } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 const LoginSchema = z.object({
@@ -28,10 +28,33 @@ type LoginResponse = {
   accessExpires: string
 }
 
+// Demo credentials
+const DEMO_CREDENTIALS = {
+  admin: {
+    email: 'at.divv@gmail.com',
+    password: '@edpADMIN',
+    label: 'Admin',
+    icon: ShieldCheck,
+  },
+  staff: {
+    email: 'staff@hospital.com',
+    password: 'staff123',
+    label: 'Staff/Doctor',
+    icon: UserCog,
+  },
+  patient: {
+    email: 'patient@hospital.com',
+    password: 'patient123',
+    label: 'Patient',
+    icon: User,
+  },
+}
+
 export default function Login() {
   const navigate = useNavigate()
   const { setSession } = useAuth()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [showDemoOptions, setShowDemoOptions] = useState(false)
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(LoginSchema),
@@ -55,6 +78,14 @@ export default function Login() {
   function onSubmit(values: LoginValues) {
     setErrorMessage(null)
     mutate(values)
+  }
+
+  function handleDemoLogin(role: keyof typeof DEMO_CREDENTIALS) {
+    const credentials = DEMO_CREDENTIALS[role]
+    form.setValue('email', credentials.email)
+    form.setValue('password', credentials.password)
+    setErrorMessage(null)
+    mutate({ email: credentials.email, password: credentials.password })
   }
 
   return (
@@ -234,6 +265,50 @@ export default function Login() {
                   </Button>
                 </form>
               </Form>
+
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <Separator />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or try demo</span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full border-2"
+                onClick={() => setShowDemoOptions(!showDemoOptions)}
+                disabled={isPending}
+              >
+                <Sparkles className="size-4 mr-2" />
+                {showDemoOptions ? 'Hide Demo Options' : 'Quick Demo Login'}
+              </Button>
+
+              {showDemoOptions && (
+                <div className="grid grid-cols-1 gap-2 animate-slide-in-bottom">
+                  {Object.entries(DEMO_CREDENTIALS).map(([key, cred]) => {
+                    const Icon = cred.icon
+                    return (
+                      <Button
+                        key={key}
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-start border-2 hover:bg-primary/5 hover:border-primary"
+                        onClick={() => handleDemoLogin(key as keyof typeof DEMO_CREDENTIALS)}
+                        disabled={isPending}
+                      >
+                        <Icon className="size-4 mr-2" />
+                        <span className="flex-1 text-left">{cred.label}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {cred.email.split('@')[0]}
+                        </span>
+                      </Button>
+                    )
+                  })}
+                </div>
+              )}
             </CardContent>
             
             <Separator />
