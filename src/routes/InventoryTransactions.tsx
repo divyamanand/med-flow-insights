@@ -12,11 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from "@/components/ui/table";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ArrowDownToLine, Filter, Calendar, Package, TrendingUp, TrendingDown, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowDownToLine, Filter, Calendar, Package, TrendingUp, TrendingDown, Eye, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 
 type InventoryTx = {
   id: string;
-  type: "in" | "out" | "adjust";
+  type: "in" | "out" | "adjust" | "fulfill";
   quantity: number;
   reason: string | null;
   createdAt: string;
@@ -25,7 +25,8 @@ type InventoryTx = {
     id: string;
     name: string;
     type: string;
-    unit: string | null;
+    manufacturer: string | null;
+    description: string | null;
   };
 };
 
@@ -151,6 +152,7 @@ export default function InventoryTransactions() {
                   <SelectItem value="in">Stock In</SelectItem>
                   <SelectItem value="out">Stock Out</SelectItem>
                   <SelectItem value="adjust">Adjustment</SelectItem>
+                  <SelectItem value="fulfill">Fulfill</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -220,10 +222,11 @@ export default function InventoryTransactions() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50 hover:bg-muted/50">
-                      <TableHead className="font-bold">ID</TableHead>
                       <TableHead className="font-bold">Item Name</TableHead>
-                      <TableHead className="font-bold">Type</TableHead>
+                      <TableHead className="font-bold">Transaction Type</TableHead>
+                      <TableHead className="font-bold">Item Type</TableHead>
                       <TableHead className="font-bold">Quantity</TableHead>
+                      <TableHead className="font-bold">Manufacturer</TableHead>
                       <TableHead className="font-bold">Reason</TableHead>
                       <TableHead className="font-bold">Created At</TableHead>
                       <TableHead className="text-right font-bold">Actions</TableHead>
@@ -233,14 +236,22 @@ export default function InventoryTransactions() {
                   <TableBody>
                     {paged.map((tx) => (
                       <TableRow key={tx.id} className="hover:bg-primary/5 transition-colors">
-                        <TableCell className="font-mono text-muted-foreground">{tx.id}</TableCell>
-                        <TableCell className="font-semibold">{tx.inventoryItem.name}</TableCell>
+                        <TableCell>
+                          <div className="font-semibold">{tx.inventoryItem.name}</div>
+                          {tx.inventoryItem.description && (
+                            <div className="text-xs text-muted-foreground truncate max-w-xs">
+                              {tx.inventoryItem.description}
+                            </div>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <Badge
                             variant={
                               tx.type === "in"
                                 ? "default"
                                 : tx.type === "out"
+                                ? "destructive"
+                                : tx.type === "fulfill"
                                 ? "outline"
                                 : "secondary"
                             }
@@ -248,11 +259,31 @@ export default function InventoryTransactions() {
                           >
                             {tx.type === "in" && <TrendingUp className="size-3" />}
                             {tx.type === "out" && <TrendingDown className="size-3" />}
+                            {tx.type === "fulfill" && <Package className="size-3" />}
+                            {tx.type === "adjust" && <RefreshCw className="size-3" />}
                             {tx.type}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary">{tx.quantity}</Badge>
+                          <Badge variant="outline" className="capitalize">
+                            {tx.inventoryItem.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`font-semibold ${
+                              tx.type === "in"
+                                ? "text-green-600"
+                                : tx.type === "out" || tx.type === "fulfill"
+                                ? "text-red-600"
+                                : ""
+                            }`}
+                          >
+                            {tx.type === "in" ? "+" : tx.type === "out" || tx.type === "fulfill" ? "-" : ""}{tx.quantity}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {tx.inventoryItem.manufacturer || "-"}
                         </TableCell>
                         <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
                           {tx.reason || "-"}
@@ -325,7 +356,12 @@ function TxViewDialog({ children, tx }: { children: React.ReactNode; tx: Invento
         <div className="space-y-2 text-sm">
           <p><strong>ID:</strong> {tx.id}</p>
           <p><strong>Item:</strong> {tx.inventoryItem.name}</p>
-          <p><strong>Type:</strong> {tx.type}</p>
+          <p><strong>Item Type:</strong> {tx.inventoryItem.type}</p>
+          <p><strong>Manufacturer:</strong> {tx.inventoryItem.manufacturer || "-"}</p>
+          {tx.inventoryItem.description && (
+            <p><strong>Description:</strong> {tx.inventoryItem.description}</p>
+          )}
+          <p><strong>Transaction Type:</strong> {tx.type}</p>
           <p><strong>Quantity:</strong> {tx.quantity}</p>
           <p><strong>Reason:</strong> {tx.reason || "-"}</p>
           <p><strong>Created At:</strong> {format(parseISO(tx.createdAt), "PPPpp")}</p>

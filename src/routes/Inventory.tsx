@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, isBefore, parseISO } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 import { api } from "@/lib/axios";
 import { useAuth } from "@/lib/auth";
@@ -28,21 +29,155 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
-import { Package, Search, Plus, Filter, AlertCircle, Calendar, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
+import { Package, Search, Plus, Filter, AlertCircle, Calendar, Trash2, ChevronLeft, ChevronRight, Edit, FileText } from "lucide-react";
 
 /* ---------------- Types ---------------- */
 
 type InventoryItem = {
+  stockId: string;
+  itemId: string;
   name: string;
   quantity: number;
-  unit: string | null;
   expiry: string | null;
+  notes: string | null;
+  created: Date;
+  updated: Date;
+};
+
+type AddItemRequest = {
+  name: string;
+  type: "medicine" | "equipment" | "blood" | "supply";
+  manufacturer?: string;
+  description?: string;
+};
+
+type AddItemResponse = {
+  id: string;
+  name: string;
+  type: string;
+  manufacturer: string | null;
+  description: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type ItemSearchResult = {
+  id: string;
+  name: string;
+  type: string;
+  manufacturer: string | null;
+  description: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type AddStockRequest = {
+  quantity: number;
+  expiry?: string;
+  notes?: string;
+};
+
+type AddStockResponse = {
+  id: string;
+  inventoryItem: {
+    id: string;
+    name: string;
+    type: "medicine" | "equipment" | "blood" | "supply";
+    manufacturer: string | null;
+    description: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  quantity: number;
+  expiry: string | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type UpdateStockRequest = {
+  quantity?: number;
+  expiry?: string;
+  notes?: string;
+};
+
+type UpdateStockResponse = {
+  id: string;
+  inventoryItem: {
+    id: string;
+    name: string;
+    type: "medicine" | "equipment" | "blood" | "supply";
+    manufacturer: string | null;
+    description: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  quantity: number;
+  expiry: string | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type DeleteStockResponse = {
+  id: string;
+  removed: boolean;
+};
+
+type RemoveExpiredResponse = {
+  removed: number;
+  ids: string[];
 };
 
 /* ---------------- Component ---------------- */
 
 export default function InventoryManagement() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  
+  /* ---------------- Add Item Dialog State ---------------- */
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newItem, setNewItem] = useState<AddItemRequest>({
+    name: "",
+    type: "medicine",
+    manufacturer: "",
+    description: "",
+  });
+  
+  /* ---------------- Add Stock Dialog State ---------------- */
+  const [stockDialogOpen, setStockDialogOpen] = useState(false);
+  const [itemSearchQuery, setItemSearchQuery] = useState("");
+  const [selectedItem, setSelectedItem] = useState<ItemSearchResult | null>(null);
+  const [newStock, setNewStock] = useState<AddStockRequest>({
+    quantity: 0,
+    expiry: "",
+    notes: "",
+  });
+  
+  /* ---------------- Edit Stock Dialog State ---------------- */
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingStock, setEditingStock] = useState<InventoryItem | null>(null);
+  const [editStock, setEditStock] = useState<UpdateStockRequest>({
+    quantity: undefined,
+    expiry: "",
+    notes: "",
+  });
+  
+  /* ---------------- Remove Expired Dialog State ---------------- */
+  const [removeExpiredDialogOpen, setRemoveExpiredDialogOpen] = useState(false);
+  
   /* ---------------- Filters ---------------- */
   const [search, setSearch] = useState("");
 
@@ -63,11 +198,156 @@ export default function InventoryManagement() {
     queryKey: ["inventory", { typeFilter, lowStock, expiryBefore }],
     queryFn: () =>
       api.get("/inventory", {
-        type: typeFilter === "all" ? undefined : typeFilter,
+        itemType: typeFilter === "all" ? undefined : typeFilter,
         lowStock: lowStock ?? undefined,
-        expiryBefore: expiryBefore || undefined,
+        expiry: expiryBefore || undefined,
       }),
   });
+
+  /* ---------------- Add Item Mutation ---------------- */
+  const addItemMutation = useMutation<AddItemResponse, Error, AddItemRequest>({
+    mutationFn: (itemData) => api.post("/inventory", itemData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      setDialogOpen(false);
+      setNewItem({
+        name: "",
+        type: "medicine",
+        manufacturer: "",
+        description: "",
+      });
+    },
+  });
+
+  const handleAddItem = () => {
+    if (!newItem.name.trim()) return;
+    
+    const payload: AddItemRequest = {
+      name: newItem.name.trim(),
+      type: newItem.type,
+    };
+    
+    if (newItem.manufacturer?.trim()) {
+      payload.manufacturer = newItem.manufacturer.trim();
+    }
+    
+    if (newItem.description?.trim()) {
+      payload.description = newItem.description.trim();
+    }
+    
+    addItemMutation.mutate(payload);
+  };
+
+  /* ---------------- Item Search Query ---------------- */
+  const { data: searchResults, isLoading: isSearching } = useQuery<ItemSearchResult[]>({
+    queryKey: ["inventory-search", itemSearchQuery],
+    queryFn: () => api.get(`/inventory/by-name/${encodeURIComponent(itemSearchQuery)}`),
+    enabled: itemSearchQuery.trim().length > 0,
+  });
+
+  /* ---------------- Add Stock Mutation ---------------- */
+  const addStockMutation = useMutation<AddStockResponse, Error, { itemId: string; data: AddStockRequest }>({
+    mutationFn: ({ itemId, data }) => api.post(`/inventory/${itemId}/stock`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      setStockDialogOpen(false);
+      setItemSearchQuery("");
+      setSelectedItem(null);
+      setNewStock({
+        quantity: 0,
+        expiry: "",
+        notes: "",
+      });
+    },
+  });
+
+  const handleAddStock = () => {
+    if (!selectedItem || newStock.quantity <= 0) return;
+    
+    const payload: AddStockRequest = {
+      quantity: newStock.quantity,
+    };
+    
+    if (newStock.expiry?.trim()) {
+      payload.expiry = newStock.expiry.trim();
+    }
+    
+    if (newStock.notes?.trim()) {
+      payload.notes = newStock.notes.trim();
+    }
+    
+    addStockMutation.mutate({ itemId: selectedItem.id, data: payload });
+  };
+
+  /* ---------------- Update Stock Mutation ---------------- */
+  const updateStockMutation = useMutation<UpdateStockResponse, Error, { itemId: string; stockId: string; data: UpdateStockRequest }>({
+    mutationFn: ({ itemId, stockId, data }) => api.put(`/inventory/${itemId}/stock/${stockId}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      setEditDialogOpen(false);
+      setEditingStock(null);
+      setEditStock({
+        quantity: undefined,
+        expiry: "",
+        notes: "",
+      });
+    },
+  });
+
+  const handleUpdateStock = () => {
+    if (!editingStock) return;
+    
+    const payload: UpdateStockRequest = {};
+    
+    if (editStock.quantity !== undefined && editStock.quantity > 0) {
+      payload.quantity = editStock.quantity;
+    }
+    
+    if (editStock.expiry?.trim()) {
+      payload.expiry = editStock.expiry.trim();
+    }
+    
+    if (editStock.notes?.trim()) {
+      payload.notes = editStock.notes.trim();
+    }
+    
+    // Only proceed if there's something to update
+    if (Object.keys(payload).length === 0) return;
+    
+    updateStockMutation.mutate({ 
+      itemId: editingStock.itemId, 
+      stockId: editingStock.stockId, 
+      data: payload 
+    });
+  };
+
+  /* ---------------- Delete Stock Mutation ---------------- */
+  const deleteStockMutation = useMutation<DeleteStockResponse, Error, { itemId: string; stockId: string }>({
+    mutationFn: ({ itemId, stockId }) => api.delete(`/inventory/${itemId}/stock/${stockId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+    },
+  });
+
+  const handleDeleteStock = (item: InventoryItem) => {
+    if (confirm(`Are you sure you want to delete stock for "${item.name}"? This will remove ${item.quantity} units.`)) {
+      deleteStockMutation.mutate({ itemId: item.itemId, stockId: item.stockId });
+    }
+  };
+
+  /* ---------------- Remove Expired Mutation ---------------- */
+  const removeExpiredMutation = useMutation<RemoveExpiredResponse, Error>({
+    mutationFn: () => api.post("/inventory/remove-expired", {}),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      setRemoveExpiredDialogOpen(false);
+      alert(`Successfully removed ${data.removed} expired stock item(s).`);
+    },
+  });
+
+  const handleRemoveExpired = () => {
+    removeExpiredMutation.mutate();
+  };
 
   /* ---------------- Client Search Filter ---------------- */
   const filtered = useMemo(() => {
@@ -130,6 +410,18 @@ export default function InventoryManagement() {
           <p className="text-muted-foreground text-sm md:text-base">
             Track medicines, equipment, and supplies
           </p>
+        </div>
+        
+        {/* View Transaction Logs Button */}
+        <div>
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => navigate("/inventory/transactions")}
+          >
+            <FileText className="size-4" />
+            View Transaction Logs
+          </Button>
         </div>
       </div>
 
@@ -200,30 +492,418 @@ export default function InventoryManagement() {
             </div>
           </div>
 
-          {/* Add New Item */}
-          <div className="flex justify-end">
-            <Dialog>
+          {/* Add New Item & Stock */}
+          <div className="flex justify-between items-center gap-2">
+            {/* Remove Expired Button */}
+            <Dialog open={removeExpiredDialogOpen} onOpenChange={setRemoveExpiredDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="destructive" className="gap-2">
+                  <AlertCircle className="size-4" />
+                  Remove Expired
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Remove Expired Stock</DialogTitle>
+                  <DialogDescription>
+                    This will permanently remove all stock items that have expired. This action cannot be undone.
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="py-4">
+                  <div className="flex items-center gap-2 text-warning">
+                    <AlertCircle className="size-5" />
+                    <span className="font-medium">Warning: This action is irreversible</span>
+                  </div>
+                  
+                  {removeExpiredMutation.isError && (
+                    <div className="mt-4 text-sm text-destructive">
+                      Error: {removeExpiredMutation.error?.message}
+                    </div>
+                  )}
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setRemoveExpiredDialogOpen(false)}
+                    disabled={removeExpiredMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleRemoveExpired}
+                    disabled={removeExpiredMutation.isPending}
+                    className="gap-2"
+                  >
+                    {removeExpiredMutation.isPending ? (
+                      <>
+                        <Spinner className="size-4" />
+                        Removing...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="size-4" />
+                        Remove Expired
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <div className="flex gap-2">
+            <Dialog open={stockDialogOpen} onOpenChange={setStockDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Package className="size-4" />
+                  Add Stock
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Add Stock to Item</DialogTitle>
+                  <DialogDescription>
+                    Search for an item and add stock quantity.
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4 py-4">
+                  {/* Item Search */}
+                  <div className="space-y-2">
+                    <Label htmlFor="item-search">Search Item *</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                      <Input
+                        id="item-search"
+                        className="pl-10"
+                        placeholder="Search by item name..."
+                        value={itemSearchQuery}
+                        onChange={(e) => {
+                          setItemSearchQuery(e.target.value);
+                          setSelectedItem(null);
+                        }}
+                      />
+                    </div>
+                    
+                    {/* Search Results */}
+                    {isSearching && itemSearchQuery && (
+                      <div className="text-sm text-muted-foreground flex items-center gap-2">
+                        <Spinner className="size-3" />
+                        Searching...
+                      </div>
+                    )}
+                    
+                    {searchResults && searchResults.length > 0 && !selectedItem && (
+                      <div className="border rounded-md max-h-48 overflow-y-auto">
+                        {searchResults.map((item) => (
+                          <div
+                            key={item.id}
+                            className="p-3 hover:bg-accent cursor-pointer border-b last:border-b-0"
+                            onClick={() => {
+                              setSelectedItem(item);
+                              setItemSearchQuery(item.name);
+                            }}
+                          >
+                            <div className="font-medium">{item.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {item.type} {item.manufacturer && `• ${item.manufacturer}`}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {searchResults && searchResults.length === 0 && itemSearchQuery && !isSearching && (
+                      <div className="text-sm text-muted-foreground">No items found</div>
+                    )}
+                    
+                    {/* Selected Item */}
+                    {selectedItem && (
+                      <div className="border rounded-md p-3 bg-accent/50">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium">{selectedItem.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {selectedItem.type} {selectedItem.manufacturer && `• ${selectedItem.manufacturer}`}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedItem(null);
+                              setItemSearchQuery("");
+                            }}
+                          >
+                            Change
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Quantity */}
+                  <div className="space-y-2">
+                    <Label htmlFor="stock-quantity">Quantity *</Label>
+                    <Input
+                      id="stock-quantity"
+                      type="number"
+                      min="1"
+                      placeholder="Enter quantity"
+                      value={newStock.quantity || ""}
+                      onChange={(e) => setNewStock({ ...newStock, quantity: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+
+                  {/* Expiry Date */}
+                  <div className="space-y-2">
+                    <Label htmlFor="stock-expiry">Expiry Date</Label>
+                    <Input
+                      id="stock-expiry"
+                      type="date"
+                      value={newStock.expiry}
+                      onChange={(e) => setNewStock({ ...newStock, expiry: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Notes */}
+                  <div className="space-y-2">
+                    <Label htmlFor="stock-notes">Notes</Label>
+                    <Textarea
+                      id="stock-notes"
+                      placeholder="Optional notes"
+                      value={newStock.notes}
+                      onChange={(e) => setNewStock({ ...newStock, notes: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
+
+                  {addStockMutation.isError && (
+                    <div className="text-sm text-destructive">
+                      Error: {addStockMutation.error?.message}
+                    </div>
+                  )}
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setStockDialogOpen(false)}
+                    disabled={addStockMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleAddStock}
+                    disabled={!selectedItem || newStock.quantity <= 0 || addStockMutation.isPending}
+                    className="gap-2"
+                  >
+                    {addStockMutation.isPending ? (
+                      <>
+                        <Spinner className="size-4" />
+                        Adding...
+                      </>
+                    ) : (
+                      <>
+                        <Package className="size-4" />
+                        Add Stock
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit Stock Dialog */}
+            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Edit Stock</DialogTitle>
+                  <DialogDescription>
+                    Update stock details for {editingStock?.name}
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4 py-4">
+                  {/* Quantity */}
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-quantity">Quantity</Label>
+                    <Input
+                      id="edit-quantity"
+                      type="number"
+                      min="0"
+                      placeholder="Enter quantity"
+                      value={editStock.quantity ?? ""}
+                      onChange={(e) => setEditStock({ ...editStock, quantity: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+
+                  {/* Expiry Date */}
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-expiry">Expiry Date</Label>
+                    <Input
+                      id="edit-expiry"
+                      type="date"
+                      value={editStock.expiry}
+                      onChange={(e) => setEditStock({ ...editStock, expiry: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Notes */}
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-notes">Notes</Label>
+                    <Textarea
+                      id="edit-notes"
+                      placeholder="Optional notes"
+                      value={editStock.notes}
+                      onChange={(e) => setEditStock({ ...editStock, notes: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
+
+                  {updateStockMutation.isError && (
+                    <div className="text-sm text-destructive">
+                      Error: {updateStockMutation.error?.message}
+                    </div>
+                  )}
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditDialogOpen(false)}
+                    disabled={updateStockMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleUpdateStock}
+                    disabled={updateStockMutation.isPending}
+                    className="gap-2"
+                  >
+                    {updateStockMutation.isPending ? (
+                      <>
+                        <Spinner className="size-4" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <Edit className="size-4" />
+                        Update Stock
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2">
                   <Plus className="size-4" />
                   Add Inventory Item
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                  <DialogTitle>Add Inventory Item (Demo)</DialogTitle>
+                  <DialogTitle>Add Inventory Item</DialogTitle>
                   <DialogDescription>
-                    Add a new item to the hospital inventory.
+                    Add a new item to the hospital inventory system.
                   </DialogDescription>
                 </DialogHeader>
-                <p className="text-sm text-muted-foreground">
-                  Placeholder form here…
-                </p>
+                
+                <div className="space-y-4 py-4">
+                  {/* Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="item-name">Name *</Label>
+                    <Input
+                      id="item-name"
+                      placeholder="e.g., Paracetamol 500mg"
+                      value={newItem.name}
+                      onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Type */}
+                  <div className="space-y-2">
+                    <Label htmlFor="item-type">Type *</Label>
+                    <Select
+                      value={newItem.type}
+                      onValueChange={(value) => setNewItem({ ...newItem, type: value as AddItemRequest["type"] })}
+                    >
+                      <SelectTrigger id="item-type">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="medicine">Medicine</SelectItem>
+                        <SelectItem value="equipment">Equipment</SelectItem>
+                        <SelectItem value="blood">Blood</SelectItem>
+                        <SelectItem value="supply">Supply</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Manufacturer */}
+                  <div className="space-y-2">
+                    <Label htmlFor="manufacturer">Manufacturer</Label>
+                    <Input
+                      id="manufacturer"
+                      placeholder="Optional"
+                      value={newItem.manufacturer}
+                      onChange={(e) => setNewItem({ ...newItem, manufacturer: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      placeholder="Optional notes or description"
+                      value={newItem.description}
+                      onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
+
+                  {addItemMutation.isError && (
+                    <div className="text-sm text-destructive">
+                      Error: {addItemMutation.error?.message}
+                    </div>
+                  )}
+                </div>
+
                 <DialogFooter>
-                  <Button>Create (Demo)</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setDialogOpen(false)}
+                    disabled={addItemMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleAddItem}
+                    disabled={!newItem.name.trim() || addItemMutation.isPending}
+                    className="gap-2"
+                  >
+                    {addItemMutation.isPending ? (
+                      <>
+                        <Spinner className="size-4" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="size-4" />
+                        Create Item
+                      </>
+                    )}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -256,8 +936,9 @@ export default function InventoryManagement() {
                     <TableRow className="bg-muted/50 hover:bg-muted/50">
                       <TableHead className="font-bold">Name</TableHead>
                       <TableHead className="font-bold">Quantity</TableHead>
-                      <TableHead className="font-bold">Unit</TableHead>
                       <TableHead className="font-bold">Expiry</TableHead>
+                      <TableHead className="font-bold">Notes</TableHead>
+                      <TableHead className="font-bold">Created</TableHead>
                       <TableHead className="text-right font-bold">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -273,12 +954,19 @@ export default function InventoryManagement() {
 
                       return (
                         <TableRow
-                          key={idx}
+                          key={item.stockId}
                           className={`transition-colors ${
                             expired ? "bg-destructive/10 hover:bg-destructive/20" : "hover:bg-primary/5"
                           }`}
                         >
-                          <TableCell className="font-medium">{item.name}</TableCell>
+                          <TableCell>
+                            <button
+                              className="font-medium text-primary hover:underline text-left"
+                              onClick={() => navigate(`/inventory/item/${encodeURIComponent(item.name)}`)}
+                            >
+                              {item.name}
+                            </button>
+                          </TableCell>
 
                           <TableCell>
                             <Badge
@@ -288,8 +976,6 @@ export default function InventoryManagement() {
                               {item.quantity}
                             </Badge>
                           </TableCell>
-
-                          <TableCell className="text-muted-foreground">{item.unit ?? "N/A"}</TableCell>
 
                           <TableCell>
                             {item.expiry ? (
@@ -303,10 +989,42 @@ export default function InventoryManagement() {
                             )}
                           </TableCell>
 
+                          <TableCell className="text-muted-foreground text-sm max-w-xs truncate">
+                            {item.notes || "—"}
+                          </TableCell>
+
+                          <TableCell className="text-muted-foreground text-sm">
+                            {format(new Date(item.created), "yyyy-MM-dd")}
+                          </TableCell>
+
                           <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
-                              <Trash2 className="size-4" />
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-primary hover:bg-primary/10"
+                                onClick={() => {
+                                  setEditingStock(item);
+                                  setEditStock({
+                                    quantity: item.quantity,
+                                    expiry: item.expiry ? format(parseISO(item.expiry), "yyyy-MM-dd") : "",
+                                    notes: item.notes || "",
+                                  });
+                                  setEditDialogOpen(true);
+                                }}
+                              >
+                                <Edit className="size-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDeleteStock(item)}
+                                disabled={deleteStockMutation.isPending}
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
