@@ -37,7 +37,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { DoorClosed, Filter, Eye, CheckCircle, XCircle, Link as LinkIcon, ChevronLeft, ChevronRight, Edit2 } from "lucide-react";
+import { DoorClosed, Filter, Eye, CheckCircle, XCircle, Link as LinkIcon, ChevronLeft, ChevronRight, Edit2, CalendarClock } from "lucide-react";
 
 type RoomRequirement = {
   id: string;
@@ -53,6 +53,13 @@ type RoomRequirement = {
   updatedAt: string;
 };
 
+type Room = {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+};
+
 const ROOM_TYPES = ["ICU", "general", "operating", "lab"];
 
 export default function RoomRequirementsManagement() {
@@ -65,6 +72,7 @@ export default function RoomRequirementsManagement() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
+  // Edit Dialog State
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingReq, setEditingReq] = useState<RoomRequirement | null>(null);
   const [editFormData, setEditFormData] = useState({
@@ -76,6 +84,17 @@ export default function RoomRequirementsManagement() {
     estimatedEndTime: "",
   });
 
+  // Fulfillment Dialog State
+  const [fulfillDialogOpen, setFulfillDialogOpen] = useState(false);
+  const [reqToFulfill, setReqToFulfill] = useState<RoomRequirement | null>(null);
+  const [fulfillFormData, setFulfillFormData] = useState({
+    roomId: "",
+    startAt: "",
+    endAt: "",
+    notes: "",
+  });
+
+  /* ---------------- Queries ---------------- */
   const reqQ = useQuery<RoomRequirement[]>({
     queryKey: ["room-reqs"],
     queryFn: async () => {
@@ -85,6 +104,16 @@ export default function RoomRequirementsManagement() {
     staleTime: 30000,
   });
 
+  const roomsQ = useQuery<Room[]>({
+    queryKey: ["rooms"],
+    queryFn: async () => {
+      const res = await api.get("/rooms");
+      return res.data;
+    },
+    staleTime: 60000,
+  });
+
+  /* ---------------- Mutations ---------------- */
   const createReq = useMutation<RoomRequirement, Error, {
     primaryUserId: string;
     roomType: string;
@@ -118,6 +147,20 @@ export default function RoomRequirementsManagement() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["room-reqs"] }),
   });
 
+  const fulfillReq = useMutation({
+    mutationFn: async ({ id, body }: { id: string; body: any }) => {
+        const res = await api.post(`/requirements/rooms/${id}/fulfillments`, body);
+        return res.data;
+    },
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["room-reqs"] });
+        setFulfillDialogOpen(false);
+        setReqToFulfill(null);
+        setFulfillFormData({ roomId: "", startAt: "", endAt: "", notes: "" });
+    },
+  });
+
+  /* ---------------- Data Processing ---------------- */
   const rows = useMemo(() => {
     const rawData = reqQ.data;
     let data = Array.isArray(rawData) ? rawData : [];
@@ -142,6 +185,7 @@ export default function RoomRequirementsManagement() {
   const end = Math.min(start + pageSize, total);
   const paged = Array.isArray(rows) ? rows.slice(start, end) : [];
 
+  /* ---------------- Handlers ---------------- */
   const openEditDialog = (req: RoomRequirement) => {
     setEditingReq(req);
     setEditFormData({
@@ -154,6 +198,17 @@ export default function RoomRequirementsManagement() {
     });
     setEditDialogOpen(true);
   };
+
+  const openFulfillDialog = (req: RoomRequirement) => {
+    setReqToFulfill(req);
+    setFulfillFormData({
+        roomId: "",
+        startAt: req.startTime ? req.startTime.substring(0, 16) : "",
+        endAt: req.estimatedEndTime ? req.estimatedEndTime.substring(0, 16) : "",
+        notes: "",
+    });
+    setFulfillDialogOpen(true);
+  }
 
   const handleEdit = () => {
     if (!editingReq) return;
@@ -193,6 +248,27 @@ export default function RoomRequirementsManagement() {
       setEditDialogOpen(false);
     }
   };
+
+  const handleFulfill = () => {
+    if (!reqToFulfill || !fulfillFormData.roomId) return;
+    
+    const body: any = {
+        roomId: fulfillFormData.roomId,
+        notes: fulfillFormData.notes || null,
+    };
+    if (fulfillFormData.startAt) body.startAt = new Date(fulfillFormData.startAt).toISOString();
+    if (fulfillFormData.endAt) body.endAt = new Date(fulfillFormData.endAt).toISOString();
+
+    fulfillReq.mutate({ id: reqToFulfill.id, body });
+  };
+
+  // Filter rooms based on requirement type (if a requirement is selected for fulfillment)
+  const availableRooms = roomsQ.data || [];
+  const filteredRooms = reqToFulfill 
+    ? availableRooms.filter(r => r.type.toLowerCase() === reqToFulfill.roomType.toLowerCase())
+    : availableRooms;
+  const roomOptions = filteredRooms.length > 0 ? filteredRooms : availableRooms;
+
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
@@ -392,12 +468,8 @@ export default function RoomRequirementsManagement() {
                           size="sm"
                           variant="default"
                           className="gap-1"
-                          onClick={() =>
-                            updateReq.mutate({
-                              id: r.id,
-                              body: { status: "inProgress" },
-                            })
-                          }
+                          onClick={() => openFulfillDialog(r)}
+                          disabled={r.status === 'cancelled' || r.status === 'fulfilled'}
                         >
                           <CheckCircle className="size-3" />
                           Approve
@@ -449,6 +521,7 @@ export default function RoomRequirementsManagement() {
         </CardContent>
       </Card>
 
+      {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="border-2 shadow-2xl max-w-2xl">
           <DialogHeader>
@@ -560,6 +633,78 @@ export default function RoomRequirementsManagement() {
               {updateReq.isPending ? "Updating..." : "Update Requirement"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Fulfillment Dialog (Called via Approve) */}
+      <Dialog open={fulfillDialogOpen} onOpenChange={setFulfillDialogOpen}>
+        <DialogContent className="border-2 shadow-2xl max-w-lg">
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                    <CheckCircle className="size-5 text-green-600" />
+                    Approve & Fulfill Requirement
+                </DialogTitle>
+                <DialogDescription>
+                    Assign a room to immediately start fulfilling this request.
+                </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                    <label className="text-sm font-medium">Room</label>
+                    <Select
+                        value={fulfillFormData.roomId}
+                        onValueChange={(v) => setFulfillFormData({ ...fulfillFormData, roomId: v })}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a room..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {roomOptions.map((r) => (
+                                <SelectItem key={r.id} value={r.id}>
+                                    {r.name} <span className="text-muted-foreground text-xs ml-2">({r.type})</span>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <label className="text-sm font-medium">Start At</label>
+                        <Input
+                            type="datetime-local"
+                            value={fulfillFormData.startAt}
+                            onChange={(e) => setFulfillFormData({ ...fulfillFormData, startAt: e.target.value })}
+                        />
+                    </div>
+                    <div className="grid gap-2">
+                        <label className="text-sm font-medium">End At</label>
+                        <Input
+                            type="datetime-local"
+                            value={fulfillFormData.endAt}
+                            onChange={(e) => setFulfillFormData({ ...fulfillFormData, endAt: e.target.value })}
+                        />
+                    </div>
+                </div>
+
+                <div className="grid gap-2">
+                    <label className="text-sm font-medium">Notes</label>
+                    <Textarea
+                        placeholder="Optional fulfillment notes..."
+                        value={fulfillFormData.notes}
+                        onChange={(e) => setFulfillFormData({ ...fulfillFormData, notes: e.target.value })}
+                        rows={2}
+                    />
+                </div>
+            </div>
+
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setFulfillDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleFulfill} disabled={!fulfillFormData.roomId || fulfillReq.isPending} className="bg-green-600 hover:bg-green-700">
+                    {fulfillReq.isPending ? "Processing..." : "Confirm & Approve"}
+                </Button>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

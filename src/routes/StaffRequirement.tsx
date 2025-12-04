@@ -53,6 +53,13 @@ type StaffRequirement = {
   updatedAt: string;
 };
 
+type StaffMember = {
+  id: string;
+  name: string;
+  role: string;
+  status: string;
+};
+
 const ROLES = [
   "nurse",
   "labTech",
@@ -72,6 +79,7 @@ export default function StaffingRequirements() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
+  // Edit Dialog State
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingReq, setEditingReq] = useState<StaffRequirement | null>(null);
   const [editFormData, setEditFormData] = useState({
@@ -83,6 +91,17 @@ export default function StaffingRequirements() {
     estimatedEndTime: "",
   });
 
+  // Fulfillment Dialog State
+  const [fulfillDialogOpen, setFulfillDialogOpen] = useState(false);
+  const [reqToFulfill, setReqToFulfill] = useState<StaffRequirement | null>(null);
+  const [fulfillFormData, setFulfillFormData] = useState({
+    staffId: "",
+    startAt: "",
+    endAt: "",
+    notes: "",
+  });
+
+  /* ---------------- Queries ---------------- */
   const q = useQuery<StaffRequirement[]>({
     queryKey: ["staff-reqs"],
     queryFn: async () => {
@@ -92,6 +111,16 @@ export default function StaffingRequirements() {
     staleTime: 30000,
   });
 
+  const staffQ = useQuery<StaffMember[]>({
+    queryKey: ["staff-members"],
+    queryFn: async () => {
+      const res = await api.get("/staff");
+      return res.data;
+    },
+    staleTime: 60000,
+  });
+
+  /* ---------------- Mutations ---------------- */
   const createReq = useMutation<StaffRequirement, Error, {
     primaryUserId: string;
     roleNeeded: string;
@@ -125,6 +154,20 @@ export default function StaffingRequirements() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["staff-reqs"] }),
   });
 
+  const fulfillReq = useMutation({
+    mutationFn: async ({ id, body }: { id: string; body: any }) => {
+        const res = await api.post(`/requirements/staff/${id}/fulfillments`, body);
+        return res.data;
+    },
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["staff-reqs"] });
+        setFulfillDialogOpen(false);
+        setReqToFulfill(null);
+        setFulfillFormData({ staffId: "", startAt: "", endAt: "", notes: "" });
+    },
+  });
+
+  /* ---------------- Filtering ---------------- */
   const rows = useMemo(() => {
     const rawData = q.data;
     let data = Array.isArray(rawData) ? rawData : [];
@@ -149,6 +192,7 @@ export default function StaffingRequirements() {
   const end = Math.min(start + pageSize, total);
   const paged = Array.isArray(rows) ? rows.slice(start, end) : [];
 
+  /* ---------------- Handlers ---------------- */
   const openEditDialog = (req: StaffRequirement) => {
     setEditingReq(req);
     setEditFormData({
@@ -160,6 +204,17 @@ export default function StaffingRequirements() {
       estimatedEndTime: req.estimatedEndTime ? req.estimatedEndTime.substring(0, 16) : "",
     });
     setEditDialogOpen(true);
+  };
+
+  const openFulfillDialog = (req: StaffRequirement) => {
+    setReqToFulfill(req);
+    setFulfillFormData({
+        staffId: "",
+        startAt: req.startTime ? req.startTime.substring(0, 16) : "",
+        endAt: req.estimatedEndTime ? req.estimatedEndTime.substring(0, 16) : "",
+        notes: "",
+    });
+    setFulfillDialogOpen(true);
   };
 
   const handleEdit = () => {
@@ -200,6 +255,27 @@ export default function StaffingRequirements() {
       setEditDialogOpen(false);
     }
   };
+
+  const handleFulfill = () => {
+    if (!reqToFulfill || !fulfillFormData.staffId) return;
+    
+    const body: any = {
+        staffId: fulfillFormData.staffId,
+        notes: fulfillFormData.notes || null,
+    };
+    if (fulfillFormData.startAt) body.startAt = new Date(fulfillFormData.startAt).toISOString();
+    if (fulfillFormData.endAt) body.endAt = new Date(fulfillFormData.endAt).toISOString();
+
+    fulfillReq.mutate({ id: reqToFulfill.id, body });
+  };
+
+  const availableStaff = staffQ.data || [];
+  // Filter staff by the role needed, or show all if role matching is loose
+  const staffOptions = reqToFulfill 
+    ? availableStaff.filter(s => s.role.toLowerCase() === reqToFulfill.roleNeeded.toLowerCase()) 
+    : availableStaff;
+  // Fallback to all if no exact matches found (or business logic dictates flexibility)
+  const finalStaffOptions = staffOptions.length > 0 ? staffOptions : availableStaff;
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
@@ -395,12 +471,8 @@ export default function StaffingRequirements() {
                           size="sm"
                           variant="default"
                           className="gap-1"
-                          onClick={() =>
-                            updateReq.mutate({
-                              id: r.id,
-                              body: { status: "inProgress" },
-                            })
-                          }
+                          onClick={() => openFulfillDialog(r)}
+                          disabled={r.status === 'cancelled' || r.status === 'fulfilled'}
                         >
                           <CheckCircle className="size-3" />
                           Approve
@@ -450,6 +522,7 @@ export default function StaffingRequirements() {
         </CardContent>
       </Card>
 
+      {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="border-2 shadow-2xl max-w-2xl">
           <DialogHeader>
@@ -561,6 +634,78 @@ export default function StaffingRequirements() {
               {updateReq.isPending ? "Updating..." : "Update Requirement"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Fulfillment Dialog (Approve flow) */}
+      <Dialog open={fulfillDialogOpen} onOpenChange={setFulfillDialogOpen}>
+        <DialogContent className="border-2 shadow-2xl max-w-lg">
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                    <CheckCircle className="size-5 text-green-600" />
+                    Approve & Assign Staff
+                </DialogTitle>
+                <DialogDescription>
+                    Assign a staff member to immediately start fulfilling this request.
+                </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                    <label className="text-sm font-medium">Staff Member</label>
+                    <Select
+                        value={fulfillFormData.staffId}
+                        onValueChange={(v) => setFulfillFormData({ ...fulfillFormData, staffId: v })}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a staff member..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {finalStaffOptions.map((s) => (
+                                <SelectItem key={s.id} value={s.id}>
+                                    {s.name} <span className="text-muted-foreground text-xs ml-2">({s.role})</span>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <label className="text-sm font-medium">Start At</label>
+                        <Input
+                            type="datetime-local"
+                            value={fulfillFormData.startAt}
+                            onChange={(e) => setFulfillFormData({ ...fulfillFormData, startAt: e.target.value })}
+                        />
+                    </div>
+                    <div className="grid gap-2">
+                        <label className="text-sm font-medium">End At</label>
+                        <Input
+                            type="datetime-local"
+                            value={fulfillFormData.endAt}
+                            onChange={(e) => setFulfillFormData({ ...fulfillFormData, endAt: e.target.value })}
+                        />
+                    </div>
+                </div>
+
+                <div className="grid gap-2">
+                    <label className="text-sm font-medium">Notes</label>
+                    <Textarea
+                        placeholder="Optional fulfillment notes..."
+                        value={fulfillFormData.notes}
+                        onChange={(e) => setFulfillFormData({ ...fulfillFormData, notes: e.target.value })}
+                        rows={2}
+                    />
+                </div>
+            </div>
+
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setFulfillDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleFulfill} disabled={!fulfillFormData.staffId || fulfillReq.isPending} className="bg-green-600 hover:bg-green-700">
+                    {fulfillReq.isPending ? "Processing..." : "Confirm & Approve"}
+                </Button>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
