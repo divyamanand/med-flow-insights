@@ -56,7 +56,7 @@ function App() {
         <Route path="inventory/transactions" element={<InventoryTransactionsPage/>} />
         <Route path="rooms" element={<RoomsList/>} />
         <Route path='rooms/:id' element={<RoomDetails/>}/>
-        <Route path='requirements' element={<RequirementPage/>}>
+        {/* <Route path='requirements' element={<RequirementPage/>}>
           <Route index element={<Navigate to="rooms" replace />} />
           <Route path='rooms' element={<RoomRequirementsManagement/>}/>
           <Route path='staff' element={<StaffingRequirements/>}/>
@@ -68,7 +68,7 @@ function App() {
           <Route path='staff' element={<FulfillmentsStaffPage/>} />
           <Route path='rooms' element={<FulfillmentsRoomsPage/>} />
         </Route>
-        <Route path='fulfillment' element={<Navigate to="/fulfillments" replace />} />
+        <Route path='fulfillment' element={<Navigate to="/fulfillments" replace />} /> */}
         {/** Fulfillment detail routes can be added here if pages exist */}
         <Route path='settings' element={<AdministratorSettings/>}/>
         <Route path='timings' element={<StaffTimingsOverview/>}/>

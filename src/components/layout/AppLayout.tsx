@@ -80,7 +80,7 @@ export default function AppLayout() {
     staff: 'Staff',
     appointments: 'Appointments',
     inventory: 'Inventory',
-    requirements: 'Requirements',
+    // requirements: 'Requirements',
     items: 'Items',
     rooms: 'Rooms',
     prescriptions: 'Prescriptions',
@@ -89,7 +89,7 @@ export default function AppLayout() {
     leaves: 'Leaves',
     timings: 'Timings',
     doctors: 'Doctors',
-    fulfillments: 'Fulfillments',
+    // fulfillments: 'Fulfillments',
     about: 'About',
   }
 
@@ -190,7 +190,7 @@ export default function AppLayout() {
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem>
+                {/* <SidebarMenuItem>
                   <SidebarMenuButton asChild tooltip="Requirements" className="group">
                     <NavLink to="/requirements/items" className={({ isActive }) => cn(
                       "transition-all duration-200",
@@ -202,7 +202,7 @@ export default function AppLayout() {
                       <span className="font-medium">Requirements</span>
                     </NavLink>
                   </SidebarMenuButton>
-                </SidebarMenuItem>
+                </SidebarMenuItem> */}
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild tooltip="Rooms" className="group">
                     <NavLink to="/rooms" className={({ isActive }) => cn(
@@ -272,7 +272,7 @@ export default function AppLayout() {
           </SidebarGroup>
 
           <SidebarSeparator className="my-2 bg-sidebar-border/50" />
-
+{/* 
           <SidebarGroup>
             <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/70 px-3">
               Fulfillments
@@ -294,7 +294,7 @@ export default function AppLayout() {
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
-          </SidebarGroup>
+          </SidebarGroup> */}
         </SidebarContent>
 
         <SidebarFooter className="border-t border-sidebar-border/50 p-2">
