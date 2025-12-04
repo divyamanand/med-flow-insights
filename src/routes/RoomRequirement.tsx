@@ -39,7 +39,6 @@ import {
 } from "@/components/ui/dialog";
 import { DoorClosed, Filter, Eye, CheckCircle, XCircle, Link as LinkIcon, ChevronLeft, ChevronRight, Edit2 } from "lucide-react";
 
-/* ---------------- Types (from your backend) ---------------- */
 type RoomRequirement = {
   id: string;
   primaryUserId: string;
@@ -56,20 +55,16 @@ type RoomRequirement = {
 
 const ROOM_TYPES = ["ICU", "general", "operating", "lab"];
 
-/* ------------------------------------------------------------------ */
 export default function RoomRequirementsManagement() {
   const queryClient = useQueryClient();
 
-  /* ---------------- Filters ---------------- */
   const [roomType, setRoomType] = useState("all");
   const [status, setStatus] = useState("all");
   const [search, setSearch] = useState("");
 
-  /* ---------------- Pagination ---------------- */
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  /* ---------------- Edit Dialog State ---------------- */
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingReq, setEditingReq] = useState<RoomRequirement | null>(null);
   const [editFormData, setEditFormData] = useState({
@@ -81,14 +76,15 @@ export default function RoomRequirementsManagement() {
     estimatedEndTime: "",
   });
 
-  /* ---------------- Queries ---------------- */
   const reqQ = useQuery<RoomRequirement[]>({
     queryKey: ["room-reqs"],
-    queryFn: () => api.get("/requirements/rooms"),
+    queryFn: async () => {
+        const res = await api.get("/requirements/rooms");
+        return res.data;
+    },
     staleTime: 30000,
   });
 
-  /* ---------------- Mutations ---------------- */
   const createReq = useMutation<RoomRequirement, Error, {
     primaryUserId: string;
     roomType: string;
@@ -97,7 +93,10 @@ export default function RoomRequirementsManagement() {
     startTime?: string | null;
     estimatedEndTime?: string | null;
   }>({
-    mutationFn: (body) => api.post("/requirements/rooms", body),
+    mutationFn: async (body) => {
+        const res = await api.post("/requirements/rooms", body);
+        return res.data;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["room-reqs"] }),
   });
 
@@ -112,11 +111,13 @@ export default function RoomRequirementsManagement() {
       estimatedEndTime?: string | null;
     };
   }>({
-    mutationFn: ({ id, body }) => api.patch(`/requirements/rooms/${id}`, body),
+    mutationFn: async ({ id, body }) => {
+        const res = await api.patch(`/requirements/rooms/${id}`, body);
+        return res.data;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["room-reqs"] }),
   });
 
-  /* ---------------- Filtered Rows ---------------- */
   const rows = useMemo(() => {
     const rawData = reqQ.data;
     let data = Array.isArray(rawData) ? rawData : [];
@@ -136,7 +137,6 @@ export default function RoomRequirementsManagement() {
     return data;
   }, [reqQ.data, roomType, status, search]);
 
-  /* ---------------- Pagination logic ---------------- */
   const total = Array.isArray(rows) ? rows.length : 0;
   const start = (page - 1) * pageSize;
   const end = Math.min(start + pageSize, total);
@@ -149,8 +149,8 @@ export default function RoomRequirementsManagement() {
       roomType: req.roomType,
       quantity: req.quantity,
       notes: req.notes || "",
-      startTime: req.startTime ? req.startTime.split("T")[0] + "T" + req.startTime.split("T")[1].substring(0, 5) : "",
-      estimatedEndTime: req.estimatedEndTime ? req.estimatedEndTime.split("T")[0] + "T" + req.estimatedEndTime.split("T")[1].substring(0, 5) : "",
+      startTime: req.startTime ? req.startTime.substring(0, 16) : "",
+      estimatedEndTime: req.estimatedEndTime ? req.estimatedEndTime.substring(0, 16) : "",
     });
     setEditDialogOpen(true);
   };
@@ -173,10 +173,10 @@ export default function RoomRequirementsManagement() {
       body.notes = editFormData.notes || null;
     }
     if (editFormData.startTime) {
-      body.startTime = editFormData.startTime;
+      body.startTime = new Date(editFormData.startTime).toISOString();
     }
     if (editFormData.estimatedEndTime) {
-      body.estimatedEndTime = editFormData.estimatedEndTime;
+      body.estimatedEndTime = new Date(editFormData.estimatedEndTime).toISOString();
     }
 
     if (Object.keys(body).length > 0) {
@@ -196,7 +196,6 @@ export default function RoomRequirementsManagement() {
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
-      {/* Top bar: title, search, add button */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-3 flex-wrap">
           <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight gradient-text flex-1">Room Requirements</h2>
@@ -218,9 +217,6 @@ export default function RoomRequirementsManagement() {
                 </DialogDescription>
               </DialogHeader>
               <CreateRequirementForm onSubmit={createReq.mutate} />
-              <DialogFooter>
-                <Button>Save</Button>
-              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
@@ -237,7 +233,6 @@ export default function RoomRequirementsManagement() {
         </div>
       </div>
 
-      {/* Filter row */}
       <Card className="border-2 shadow-lg glass-effect">
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-center gap-3">
@@ -277,7 +272,6 @@ export default function RoomRequirementsManagement() {
         </CardContent>
       </Card>
 
-      {/* Table */}
       <Card className="border-2 shadow-lg glass-effect">
         <CardContent>
           <div className="overflow-auto max-h-[600px]">
@@ -300,7 +294,7 @@ export default function RoomRequirementsManagement() {
                     <TableCell className="whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <DoorClosed className="size-4 text-muted-foreground" />
-                        <span className="font-mono text-sm text-muted-foreground">#{r.id}</span>
+                        <span className="font-mono text-sm text-muted-foreground">#{r.id.slice(0, 8)}...</span>
                       </div>
                     </TableCell>
                     <TableCell><Badge variant="secondary" className="capitalize">{r.roomType}</Badge></TableCell>
@@ -316,7 +310,6 @@ export default function RoomRequirementsManagement() {
 
                     <TableCell>
                       <div className="flex gap-2">
-                        {/* View */}
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button size="sm" variant="outline" className="gap-1">
@@ -378,7 +371,6 @@ export default function RoomRequirementsManagement() {
                           </DialogContent>
                         </Dialog>
 
-                        {/* Fulfillments */}
                         <Button asChild size="sm" variant="outline" className="gap-1">
                           <Link to={`/requirements/rooms/${r.id}/fulfillments`}>
                             <LinkIcon className="size-3" />
@@ -386,7 +378,6 @@ export default function RoomRequirementsManagement() {
                           </Link>
                         </Button>
 
-                        {/* Edit */}
                         <Button
                           size="sm"
                           variant="outline"
@@ -397,7 +388,6 @@ export default function RoomRequirementsManagement() {
                           Edit
                         </Button>
 
-                        {/* Approve (set status=inProgress) */}
                         <Button
                           size="sm"
                           variant="default"
@@ -413,7 +403,6 @@ export default function RoomRequirementsManagement() {
                           Approve
                         </Button>
 
-                        {/* Cancel */}
                         <Button
                           size="sm"
                           variant="destructive"
@@ -436,7 +425,6 @@ export default function RoomRequirementsManagement() {
             </Table>
           </div>
 
-          {/* Pagination */}
           <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
             <div className="font-semibold">
               {total === 0 ? (
@@ -461,7 +449,6 @@ export default function RoomRequirementsManagement() {
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="border-2 shadow-2xl max-w-2xl">
           <DialogHeader>
@@ -475,7 +462,6 @@ export default function RoomRequirementsManagement() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            {/* Status */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
               <Select
@@ -494,7 +480,6 @@ export default function RoomRequirementsManagement() {
               </Select>
             </div>
 
-            {/* Room Type */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Room Type</label>
               <Select
@@ -514,7 +499,6 @@ export default function RoomRequirementsManagement() {
               </Select>
             </div>
 
-            {/* Quantity */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Quantity</label>
               <Input
@@ -525,7 +509,6 @@ export default function RoomRequirementsManagement() {
               />
             </div>
 
-            {/* Start Time */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Start Time</label>
               <Input
@@ -535,7 +518,6 @@ export default function RoomRequirementsManagement() {
               />
             </div>
 
-            {/* Estimated End Time */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Estimated End Time</label>
               <Input
@@ -545,7 +527,6 @@ export default function RoomRequirementsManagement() {
               />
             </div>
 
-            {/* Notes */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Notes</label>
               <Textarea
@@ -584,8 +565,6 @@ export default function RoomRequirementsManagement() {
     </div>
   );
 }
-
-/* ---------------- Create Requirement Form ---------------- */
 
 function CreateRequirementForm({
   onSubmit,
@@ -653,22 +632,24 @@ function CreateRequirementForm({
         />
       </div>
 
-      <Button
-        onClick={() => {
-          const data: any = {
-            primaryUserId: user?.id,
-            roomType,
-            quantity,
-          };
-          if (notes) data.notes = notes;
-          if (startTime) data.startTime = startTime;
-          if (estimatedEndTime) data.estimatedEndTime = estimatedEndTime;
-          onSubmit(data);
-        }}
-        disabled={!user?.id}
-      >
-        Create Requirement
-      </Button>
+      <div className="flex justify-end gap-2 mt-4">
+        <Button
+            onClick={() => {
+            const data: any = {
+                primaryUserId: user?.id,
+                roomType,
+                quantity,
+            };
+            if (notes) data.notes = notes;
+            if (startTime) data.startTime = new Date(startTime).toISOString();
+            if (estimatedEndTime) data.estimatedEndTime = new Date(estimatedEndTime).toISOString();
+            onSubmit(data);
+            }}
+            disabled={!user?.id}
+        >
+            Create Requirement
+        </Button>
+      </div>
     </div>
   );
 }

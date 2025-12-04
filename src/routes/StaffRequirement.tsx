@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/axios";
 import { useAuth } from "@/lib/auth";
-
 import {
   Card,
   CardHeader,
@@ -40,7 +39,6 @@ import {
 } from "@/components/ui/dialog";
 import { Users, Filter, Eye, CheckCircle, XCircle, Link as LinkIcon, ChevronLeft, ChevronRight, UserPlus, Edit2 } from "lucide-react";
 
-/* ---------------- Types matching your backend ---------------- */
 type StaffRequirement = {
   id: string;
   primaryUserId: string;
@@ -64,20 +62,16 @@ const ROLES = [
   "assistant",
 ];
 
-/* ------------------------------------------------------------------ */
 export default function StaffingRequirements() {
   const queryClient = useQueryClient();
 
-  /* ---------------- Filters ---------------- */
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  /* ---------------- Pagination ---------------- */
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  /* ---------------- Edit Dialog State ---------------- */
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingReq, setEditingReq] = useState<StaffRequirement | null>(null);
   const [editFormData, setEditFormData] = useState({
@@ -89,14 +83,15 @@ export default function StaffingRequirements() {
     estimatedEndTime: "",
   });
 
-  /* ---------------- Fetch requirements ---------------- */
   const q = useQuery<StaffRequirement[]>({
     queryKey: ["staff-reqs"],
-    queryFn: () => api.get("/requirements/staff"),
+    queryFn: async () => {
+        const res = await api.get("/requirements/staff");
+        return res.data;
+    },
     staleTime: 30000,
   });
 
-  /* ---------------- Mutations ---------------- */
   const createReq = useMutation<StaffRequirement, Error, {
     primaryUserId: string;
     roleNeeded: string;
@@ -105,7 +100,10 @@ export default function StaffingRequirements() {
     startTime?: string | null;
     estimatedEndTime?: string | null;
   }>({
-    mutationFn: (body) => api.post("/requirements/staff", body),
+    mutationFn: async (body) => {
+        const res = await api.post("/requirements/staff", body);
+        return res.data;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["staff-reqs"] }),
   });
 
@@ -120,11 +118,13 @@ export default function StaffingRequirements() {
       estimatedEndTime?: string | null;
     };
   }>({
-    mutationFn: ({ id, body }) => api.patch(`/requirements/staff/${id}`, body),
+    mutationFn: async ({ id, body }) => {
+        const res = await api.patch(`/requirements/staff/${id}`, body);
+        return res.data;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["staff-reqs"] }),
   });
 
-  /* ---------------- Filtering ---------------- */
   const rows = useMemo(() => {
     const rawData = q.data;
     let data = Array.isArray(rawData) ? rawData : [];
@@ -144,7 +144,6 @@ export default function StaffingRequirements() {
     return data;
   }, [q.data, roleFilter, statusFilter, search]);
 
-  /* ---------------- Pagination ---------------- */
   const total = Array.isArray(rows) ? rows.length : 0;
   const start = (page - 1) * pageSize;
   const end = Math.min(start + pageSize, total);
@@ -157,8 +156,8 @@ export default function StaffingRequirements() {
       roleNeeded: req.roleNeeded,
       quantity: req.quantity,
       notes: req.notes || "",
-      startTime: req.startTime ? req.startTime.split("T")[0] + "T" + req.startTime.split("T")[1].substring(0, 5) : "",
-      estimatedEndTime: req.estimatedEndTime ? req.estimatedEndTime.split("T")[0] + "T" + req.estimatedEndTime.split("T")[1].substring(0, 5) : "",
+      startTime: req.startTime ? req.startTime.substring(0, 16) : "",
+      estimatedEndTime: req.estimatedEndTime ? req.estimatedEndTime.substring(0, 16) : "",
     });
     setEditDialogOpen(true);
   };
@@ -181,10 +180,10 @@ export default function StaffingRequirements() {
       body.notes = editFormData.notes || null;
     }
     if (editFormData.startTime) {
-      body.startTime = editFormData.startTime;
+      body.startTime = new Date(editFormData.startTime).toISOString();
     }
     if (editFormData.estimatedEndTime) {
-      body.estimatedEndTime = editFormData.estimatedEndTime;
+      body.estimatedEndTime = new Date(editFormData.estimatedEndTime).toISOString();
     }
 
     if (Object.keys(body).length > 0) {
@@ -204,7 +203,6 @@ export default function StaffingRequirements() {
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
-      {/* Top bar: overview title, search, add button */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-3 flex-wrap">
           <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight gradient-text flex-1">Staff Requirements</h2>
@@ -226,9 +224,6 @@ export default function StaffingRequirements() {
                 </DialogDescription>
               </DialogHeader>
               <CreateStaffForm onSubmit={createReq.mutate} />
-              <DialogFooter>
-                <Button>Submit</Button>
-              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
@@ -242,7 +237,6 @@ export default function StaffingRequirements() {
         </div>
       </div>
 
-      {/* Filters row */}
       <Card className="border-2 shadow-lg glass-effect">
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-center gap-3">
@@ -281,7 +275,6 @@ export default function StaffingRequirements() {
         </CardContent>
       </Card>
 
-      {/* Table */}
       <Card className="border-2 shadow-lg glass-effect">
         <CardContent>
           <div className="overflow-auto max-h-[600px]">
@@ -304,7 +297,7 @@ export default function StaffingRequirements() {
                     <TableCell className="whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <Users className="size-4 text-muted-foreground" />
-                        <span className="font-mono text-sm text-muted-foreground">#{r.id}</span>
+                        <span className="font-mono text-sm text-muted-foreground">#{r.id.slice(0, 8)}...</span>
                       </div>
                     </TableCell>
                     <TableCell><Badge className="capitalize">{r.roleNeeded}</Badge></TableCell>
@@ -320,7 +313,6 @@ export default function StaffingRequirements() {
 
                     <TableCell>
                       <div className="flex gap-2">
-                        {/* View */}
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button size="sm" variant="outline" className="gap-1">
@@ -382,7 +374,6 @@ export default function StaffingRequirements() {
                           </DialogContent>
                         </Dialog>
 
-                        {/* Fulfillments */}
                         <Button asChild size="sm" variant="outline" className="gap-1">
                           <Link to={`/requirements/staff/${r.id}/fulfillments`}>
                             <LinkIcon className="size-3" />
@@ -390,7 +381,6 @@ export default function StaffingRequirements() {
                           </Link>
                         </Button>
 
-                        {/* Edit */}
                         <Button
                           size="sm"
                           variant="outline"
@@ -401,7 +391,6 @@ export default function StaffingRequirements() {
                           Edit
                         </Button>
 
-                        {/* Approve   */}
                         <Button
                           size="sm"
                           variant="default"
@@ -417,7 +406,6 @@ export default function StaffingRequirements() {
                           Approve
                         </Button>
 
-                        {/* Cancel */}
                         <Button
                           size="sm"
                           variant="destructive"
@@ -440,7 +428,6 @@ export default function StaffingRequirements() {
             </Table>
           </div>
 
-          {/* Pagination */}
           <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
             <div className="font-semibold">
               {total === 0
@@ -463,7 +450,6 @@ export default function StaffingRequirements() {
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="border-2 shadow-2xl max-w-2xl">
           <DialogHeader>
@@ -477,7 +463,6 @@ export default function StaffingRequirements() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            {/* Status */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
               <Select
@@ -496,7 +481,6 @@ export default function StaffingRequirements() {
               </Select>
             </div>
 
-            {/* Role Needed */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Role Needed</label>
               <Select
@@ -516,7 +500,6 @@ export default function StaffingRequirements() {
               </Select>
             </div>
 
-            {/* Quantity */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Quantity</label>
               <Input
@@ -527,7 +510,6 @@ export default function StaffingRequirements() {
               />
             </div>
 
-            {/* Start Time */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Start Time</label>
               <Input
@@ -537,7 +519,6 @@ export default function StaffingRequirements() {
               />
             </div>
 
-            {/* Estimated End Time */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Estimated End Time</label>
               <Input
@@ -547,7 +528,6 @@ export default function StaffingRequirements() {
               />
             </div>
 
-            {/* Notes */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Notes</label>
               <Textarea
@@ -587,7 +567,6 @@ export default function StaffingRequirements() {
   );
 }
 
-/* ---------------- Create Staff Form ---------------- */
 function CreateStaffForm({
   onSubmit,
 }: {
@@ -655,22 +634,24 @@ function CreateStaffForm({
         />
       </div>
 
-      <Button
-        onClick={() => {
-          const data: any = {
-            primaryUserId: user?.id,
-            roleNeeded,
-            quantity,
-          };
-          if (notes) data.notes = notes;
-          if (startTime) data.startTime = startTime;
-          if (estimatedEndTime) data.estimatedEndTime = estimatedEndTime;
-          onSubmit(data);
-        }}
-        disabled={!user?.id}
-      >
-        Create Requirement
-      </Button>
+      <div className="flex justify-end mt-4">
+        <Button
+            onClick={() => {
+            const data: any = {
+                primaryUserId: user?.id,
+                roleNeeded,
+                quantity,
+            };
+            if (notes) data.notes = notes;
+            if (startTime) data.startTime = new Date(startTime).toISOString();
+            if (estimatedEndTime) data.estimatedEndTime = new Date(estimatedEndTime).toISOString();
+            onSubmit(data);
+            }}
+            disabled={!user?.id}
+        >
+            Create Requirement
+        </Button>
+      </div>
     </div>
   );
 }

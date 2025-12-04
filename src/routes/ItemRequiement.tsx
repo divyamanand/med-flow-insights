@@ -1,9 +1,8 @@
-import { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/axios";
 import { useAuth } from "@/lib/auth";
-
 import {
   Card,
   CardHeader,
@@ -45,7 +44,6 @@ import {
 } from "@/components/ui/select";
 import { Package, Filter, Eye, CheckCircle, XCircle, Link as LinkIcon, ChevronLeft, ChevronRight, Edit2 } from "lucide-react";
 
-/* ---------------- Types matching your backend ---------------- */
 type ItemRequirement = {
   id: string;
   primaryUserId: string;
@@ -62,20 +60,16 @@ type ItemRequirement = {
 
 const KIND_OPTIONS = ["equipment", "blood"];
 
-/* ------------------------------------------------------------------ */
 export default function ItemRequirementsManagement() {
   const queryClient = useQueryClient();
 
-  /* ---------------- Filters ---------------- */
   const [filterKind, setFilterKind] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterUser, setFilterUser] = useState("");
 
-  /* ---------------- Pagination ---------------- */
   const [page, setPage] = useState(1);
   const rowsPerPage = 10;
 
-  /* ---------------- Edit Dialog State ---------------- */
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingReq, setEditingReq] = useState<ItemRequirement | null>(null);
   const [editFormData, setEditFormData] = useState({
@@ -86,14 +80,15 @@ export default function ItemRequirementsManagement() {
     estimatedEndTime: "",
   });
 
-  /* ---------------- Fetch Requirements ---------------- */
   const reqQ = useQuery<ItemRequirement[]>({
     queryKey: ["item-reqs"],
-    queryFn: () => api.get("/requirements/items"),
+    queryFn: async () => {
+        const res = await api.get("/requirements/items");
+        return res.data;
+    },
     staleTime: 30000,
   });
 
-  /* ---------------- Create Mutation ---------------- */
   const createReq = useMutation<ItemRequirement, Error, {
     primaryUserId: string;
     kind: "equipment" | "blood";
@@ -102,11 +97,13 @@ export default function ItemRequirementsManagement() {
     startTime?: string | null;
     estimatedEndTime?: string | null;
   }>({
-    mutationFn: (body) => api.post("/requirements/items", body),
+    mutationFn: async (body) => {
+        const res = await api.post("/requirements/items", body);
+        return res.data;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["item-reqs"] }),
   });
 
-  /* ---------------- Update Mutation ---------------- */
   const updateReq = useMutation<ItemRequirement, Error, {
     id: string;
     body: {
@@ -117,11 +114,13 @@ export default function ItemRequirementsManagement() {
       estimatedEndTime?: string | null;
     };
   }>({
-    mutationFn: ({ id, body }) => api.patch(`/requirements/items/${id}`, body),
+    mutationFn: async ({ id, body }) => {
+        const res = await api.patch(`/requirements/items/${id}`, body);
+        return res.data;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["item-reqs"] }),
   });
 
-  /* ---------------- Filtering Logic ---------------- */
   const filtered = useMemo(() => {
     const rawData = reqQ.data;
     let data = Array.isArray(rawData) ? rawData : [];
@@ -137,7 +136,6 @@ export default function ItemRequirementsManagement() {
     return data;
   }, [reqQ.data, filterKind, filterStatus, filterUser]);
 
-  /* ---------------- Pagination ---------------- */
   const start = (page - 1) * rowsPerPage;
   const end = Math.min(start + rowsPerPage, filtered.length);
   const rows = Array.isArray(filtered) ? filtered.slice(start, end) : [];
@@ -155,8 +153,8 @@ export default function ItemRequirementsManagement() {
       status: req.status,
       quantity: req.quantity,
       notes: req.notes || "",
-      startTime: req.startTime ? req.startTime.split("T")[0] + "T" + req.startTime.split("T")[1].substring(0, 5) : "",
-      estimatedEndTime: req.estimatedEndTime ? req.estimatedEndTime.split("T")[0] + "T" + req.estimatedEndTime.split("T")[1].substring(0, 5) : "",
+      startTime: req.startTime ? req.startTime.substring(0, 16) : "",
+      estimatedEndTime: req.estimatedEndTime ? req.estimatedEndTime.substring(0, 16) : "",
     });
     setEditDialogOpen(true);
   };
@@ -176,10 +174,10 @@ export default function ItemRequirementsManagement() {
       body.notes = editFormData.notes || null;
     }
     if (editFormData.startTime) {
-      body.startTime = editFormData.startTime;
+      body.startTime = new Date(editFormData.startTime).toISOString();
     }
     if (editFormData.estimatedEndTime) {
-      body.estimatedEndTime = editFormData.estimatedEndTime;
+      body.estimatedEndTime = new Date(editFormData.estimatedEndTime).toISOString();
     }
 
     if (Object.keys(body).length > 0) {
@@ -199,7 +197,6 @@ export default function ItemRequirementsManagement() {
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
-      {/* Top bar */}
       <div className="flex items-center gap-3 flex-wrap">
         <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight gradient-text flex-1">
           Item Requirements
@@ -222,15 +219,11 @@ export default function ItemRequirementsManagement() {
               </DialogDescription>
             </DialogHeader>
             <CreateItemForm onSubmit={createReq.mutate} />
-            <DialogFooter>
-              <Button>Create</Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
       <div className="grid lg:grid-cols-[280px_1fr] gap-6">
-        {/* ---------------- LEFT FILTER PANEL ---------------- */}
         <Card className="border-2 shadow-lg glass-effect h-fit">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -241,7 +234,6 @@ export default function ItemRequirementsManagement() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Kind Filter */}
             <div>
               <p className="font-semibold mb-3">Kind</p>
               <RadioGroup
@@ -262,7 +254,6 @@ export default function ItemRequirementsManagement() {
               </RadioGroup>
             </div>
 
-            {/* Status Filter */}
             <div>
               <p className="font-semibold mb-3">Status</p>
               <RadioGroup
@@ -293,7 +284,6 @@ export default function ItemRequirementsManagement() {
               </RadioGroup>
             </div>
 
-            {/* Primary User Filter */}
             <div>
               <p className="font-semibold mb-3">Requested By</p>
               <Input
@@ -316,7 +306,6 @@ export default function ItemRequirementsManagement() {
           </CardContent>
         </Card>
 
-        {/* ---------------- RIGHT TABLE PANEL ---------------- */}
         <Card className="border-2 shadow-lg glass-effect">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -328,7 +317,6 @@ export default function ItemRequirementsManagement() {
           </CardHeader>
 
           <CardContent>
-            {/* Table */}
             <div className="overflow-auto max-h-[600px]">
               <Table>
                 <TableHeader>
@@ -347,7 +335,7 @@ export default function ItemRequirementsManagement() {
                     <TableRow key={r.id} className="hover:bg-muted/50 transition-colors border-muted/30">
                       <TableCell className="whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm text-muted-foreground">#{r.id}</span>
+                          <span className="font-mono text-sm text-muted-foreground">#{r.id.slice(0, 8)}...</span>
                           <Badge variant="secondary" className="capitalize">{r.kind}</Badge>
                         </div>
                       </TableCell>
@@ -362,7 +350,6 @@ export default function ItemRequirementsManagement() {
                       <TableCell className="text-sm text-muted-foreground">{r.primaryUserId}</TableCell>
 
                       <TableCell className="text-right space-x-2">
-                        {/* View */}
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button size="sm" variant="outline" className="gap-1">
@@ -423,7 +410,6 @@ export default function ItemRequirementsManagement() {
                           </DialogContent>
                         </Dialog>
 
-                        {/* Fulfillments */}
                         <Button asChild size="sm" variant="outline" className="gap-1">
                           <Link to={`/requirements/items/${r.id}/fulfillments`}>
                             <LinkIcon className="size-3" />
@@ -431,7 +417,6 @@ export default function ItemRequirementsManagement() {
                           </Link>
                         </Button>
 
-                        {/* Edit */}
                         <Button
                           size="sm"
                           variant="outline"
@@ -442,7 +427,6 @@ export default function ItemRequirementsManagement() {
                           Edit
                         </Button>
 
-                        {/* Approve */}
                         <Button
                           size="sm"
                           variant="default"
@@ -458,7 +442,6 @@ export default function ItemRequirementsManagement() {
                           Approve
                         </Button>
 
-                        {/* Cancel */}
                         <Button
                           size="sm"
                           variant="destructive"
@@ -480,10 +463,9 @@ export default function ItemRequirementsManagement() {
               </Table>
             </div>
 
-            {/* Pagination */}
             <div className="flex items-center justify-between mt-4 text-sm">
               <p className="text-muted-foreground">
-                Showing <span className="font-semibold text-foreground">{start + 1}</span> to <span className="font-semibold text-foreground">{end}</span> of <span className="font-semibold text-foreground">{filtered.length}</span> results
+                Showing <span className="font-semibold text-foreground">{filtered.length > 0 ? start + 1 : 0}</span> to <span className="font-semibold text-foreground">{end}</span> of <span className="font-semibold text-foreground">{filtered.length}</span> results
               </p>
 
               <div className="flex gap-2">
@@ -502,7 +484,6 @@ export default function ItemRequirementsManagement() {
         </Card>
       </div>
 
-      {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="border-2 shadow-2xl max-w-2xl">
           <DialogHeader>
@@ -516,7 +497,6 @@ export default function ItemRequirementsManagement() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            {/* Status */}
             <div className="space-y-2">
               <Label htmlFor="edit-status">Status</Label>
               <Select
@@ -535,7 +515,6 @@ export default function ItemRequirementsManagement() {
               </Select>
             </div>
 
-            {/* Quantity */}
             <div className="space-y-2">
               <Label htmlFor="edit-quantity">Quantity</Label>
               <Input
@@ -547,7 +526,6 @@ export default function ItemRequirementsManagement() {
               />
             </div>
 
-            {/* Start Time */}
             <div className="space-y-2">
               <Label htmlFor="edit-startTime">Start Time</Label>
               <Input
@@ -558,7 +536,6 @@ export default function ItemRequirementsManagement() {
               />
             </div>
 
-            {/* Estimated End Time */}
             <div className="space-y-2">
               <Label htmlFor="edit-estimatedEndTime">Estimated End Time</Label>
               <Input
@@ -569,7 +546,6 @@ export default function ItemRequirementsManagement() {
               />
             </div>
 
-            {/* Notes */}
             <div className="space-y-2">
               <Label htmlFor="edit-notes">Notes</Label>
               <Textarea
@@ -610,7 +586,6 @@ export default function ItemRequirementsManagement() {
   );
 }
 
-/* ---------------- Create Item Form ---------------- */
 function CreateItemForm({
   onSubmit,
 }: {
@@ -681,22 +656,24 @@ function CreateItemForm({
         />
       </div>
 
-      <Button
-        onClick={() => {
-          const data: any = {
-            primaryUserId: user?.id,
-            kind,
-            quantity,
-          };
-          if (notes) data.notes = notes;
-          if (startTime) data.startTime = startTime;
-          if (estimatedEndTime) data.estimatedEndTime = estimatedEndTime;
-          onSubmit(data);
-        }}
-        disabled={!user?.id}
-      >
-        Create Requirement
-      </Button>
+      <div className="flex justify-end mt-4">
+        <Button
+            onClick={() => {
+            const data: any = {
+                primaryUserId: user?.id,
+                kind,
+                quantity,
+            };
+            if (notes) data.notes = notes;
+            if (startTime) data.startTime = new Date(startTime).toISOString();
+            if (estimatedEndTime) data.estimatedEndTime = new Date(estimatedEndTime).toISOString();
+            onSubmit(data);
+            }}
+            disabled={!user?.id}
+        >
+            Create Requirement
+        </Button>
+      </div>
     </div>
   );
 }
