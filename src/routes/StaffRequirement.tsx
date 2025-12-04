@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/axios";
+import { useAuth } from "@/lib/auth";
 
 import {
   Card,
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -36,7 +38,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Users, Filter, Eye, CheckCircle, XCircle, Link as LinkIcon, ChevronLeft, ChevronRight, UserPlus } from "lucide-react";
+import { Users, Filter, Eye, CheckCircle, XCircle, Link as LinkIcon, ChevronLeft, ChevronRight, UserPlus, Edit2 } from "lucide-react";
 
 /* ---------------- Types matching your backend ---------------- */
 type StaffRequirement = {
@@ -44,10 +46,13 @@ type StaffRequirement = {
   primaryUserId: string;
   roleNeeded: string;
   quantity: number;
-  fulfilled?: number;
-  notes?: string;
+  fulfilledCount: number;
+  startTime: string | null;
+  estimatedEndTime: string | null;
   status: "open" | "inProgress" | "fulfilled" | "cancelled";
+  notes: string | null;
   createdAt: string;
+  updatedAt: string;
 };
 
 const ROLES = [
@@ -72,41 +77,57 @@ export default function StaffingRequirements() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
+  /* ---------------- Edit Dialog State ---------------- */
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingReq, setEditingReq] = useState<StaffRequirement | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    status: "open" as "open" | "inProgress" | "fulfilled" | "cancelled",
+    roleNeeded: "",
+    quantity: 1,
+    notes: "",
+    startTime: "",
+    estimatedEndTime: "",
+  });
+
   /* ---------------- Fetch requirements ---------------- */
-  const q = useQuery({
+  const q = useQuery<StaffRequirement[]>({
     queryKey: ["staff-reqs"],
-    queryFn: async (): Promise<StaffRequirement[]> => {
-      const res = await api.get("/requirements/staff");
-      return res.data;
-    },
+    queryFn: () => api.get("/requirements/staff"),
     staleTime: 30000,
   });
 
   /* ---------------- Mutations ---------------- */
-  const createReq = useMutation({
-    mutationFn: (body: {
-      primaryUserId: string;
-      roleNeeded: string;
-      quantity: number;
-      notes?: string;
-    }) => api.post("/requirements/staff", body),
+  const createReq = useMutation<StaffRequirement, Error, {
+    primaryUserId: string;
+    roleNeeded: string;
+    quantity: number;
+    notes?: string | null;
+    startTime?: string | null;
+    estimatedEndTime?: string | null;
+  }>({
+    mutationFn: (body) => api.post("/requirements/staff", body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["staff-reqs"] }),
   });
 
-  const updateReq = useMutation({
-    mutationFn: ({
-      id,
-      body,
-    }: {
-      id: string;
-      body: Partial<StaffRequirement>;
-    }) => api.patch(`/requirements/staff/${id}`, body),
+  const updateReq = useMutation<StaffRequirement, Error, {
+    id: string;
+    body: {
+      status?: "open" | "inProgress" | "fulfilled" | "cancelled";
+      notes?: string | null;
+      quantity?: number;
+      roleNeeded?: string;
+      startTime?: string | null;
+      estimatedEndTime?: string | null;
+    };
+  }>({
+    mutationFn: ({ id, body }) => api.patch(`/requirements/staff/${id}`, body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["staff-reqs"] }),
   });
 
   /* ---------------- Filtering ---------------- */
   const rows = useMemo(() => {
-    let data = q.data ?? [];
+    const rawData = q.data;
+    let data = Array.isArray(rawData) ? rawData : [];
 
     if (roleFilter !== "all") data = data.filter((r) => r.roleNeeded === roleFilter);
     if (statusFilter !== "all") data = data.filter((r) => r.status === statusFilter);
@@ -124,10 +145,62 @@ export default function StaffingRequirements() {
   }, [q.data, roleFilter, statusFilter, search]);
 
   /* ---------------- Pagination ---------------- */
-  const total = rows.length;
+  const total = Array.isArray(rows) ? rows.length : 0;
   const start = (page - 1) * pageSize;
   const end = Math.min(start + pageSize, total);
-  const paged = rows.slice(start, end);
+  const paged = Array.isArray(rows) ? rows.slice(start, end) : [];
+
+  const openEditDialog = (req: StaffRequirement) => {
+    setEditingReq(req);
+    setEditFormData({
+      status: req.status,
+      roleNeeded: req.roleNeeded,
+      quantity: req.quantity,
+      notes: req.notes || "",
+      startTime: req.startTime ? req.startTime.split("T")[0] + "T" + req.startTime.split("T")[1].substring(0, 5) : "",
+      estimatedEndTime: req.estimatedEndTime ? req.estimatedEndTime.split("T")[0] + "T" + req.estimatedEndTime.split("T")[1].substring(0, 5) : "",
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleEdit = () => {
+    if (!editingReq) return;
+
+    const body: any = {};
+    
+    if (editFormData.status !== editingReq.status) {
+      body.status = editFormData.status;
+    }
+    if (editFormData.roleNeeded !== editingReq.roleNeeded) {
+      body.roleNeeded = editFormData.roleNeeded;
+    }
+    if (editFormData.quantity !== editingReq.quantity) {
+      body.quantity = editFormData.quantity;
+    }
+    if (editFormData.notes !== (editingReq.notes || "")) {
+      body.notes = editFormData.notes || null;
+    }
+    if (editFormData.startTime) {
+      body.startTime = editFormData.startTime;
+    }
+    if (editFormData.estimatedEndTime) {
+      body.estimatedEndTime = editFormData.estimatedEndTime;
+    }
+
+    if (Object.keys(body).length > 0) {
+      updateReq.mutate(
+        { id: editingReq.id, body },
+        {
+          onSuccess: () => {
+            setEditDialogOpen(false);
+            setEditingReq(null);
+          },
+        }
+      );
+    } else {
+      setEditDialogOpen(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
@@ -236,7 +309,7 @@ export default function StaffingRequirements() {
                     </TableCell>
                     <TableCell><Badge className="capitalize">{r.roleNeeded}</Badge></TableCell>
                     <TableCell><Badge variant="outline">{r.quantity}</Badge></TableCell>
-                    <TableCell><Badge variant="outline">{r.fulfilled ?? 0}</Badge></TableCell>
+                    <TableCell><Badge variant="outline">{r.fulfilledCount}</Badge></TableCell>
                     <TableCell>
                       {r.status === "fulfilled" && <Badge variant="default">Fulfilled</Badge>}
                       {r.status === "inProgress" && <Badge variant="secondary">In Progress</Badge>}
@@ -278,9 +351,25 @@ export default function StaffingRequirements() {
                                 <Badge variant="outline">{r.quantity}</Badge>
                               </div>
                               <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                                <span className="text-sm font-medium text-muted-foreground">Fulfilled Count</span>
+                                <Badge variant="outline">{r.fulfilledCount}</Badge>
+                              </div>
+                              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                                 <span className="text-sm font-medium text-muted-foreground">Status</span>
                                 <Badge>{r.status}</Badge>
                               </div>
+                              {r.startTime && (
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                                  <span className="text-sm font-medium text-muted-foreground">Start Time</span>
+                                  <span className="text-sm">{new Date(r.startTime).toLocaleString()}</span>
+                                </div>
+                              )}
+                              {r.estimatedEndTime && (
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                                  <span className="text-sm font-medium text-muted-foreground">Estimated End</span>
+                                  <span className="text-sm">{new Date(r.estimatedEndTime).toLocaleString()}</span>
+                                </div>
+                              )}
                               <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                                 <span className="text-sm font-medium text-muted-foreground">Requested By</span>
                                 <span className="text-sm">{r.primaryUserId}</span>
@@ -299,6 +388,17 @@ export default function StaffingRequirements() {
                             <LinkIcon className="size-3" />
                             Fulfillments
                           </Link>
+                        </Button>
+
+                        {/* Edit */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1"
+                          onClick={() => openEditDialog(r)}
+                        >
+                          <Edit2 className="size-3" />
+                          Edit
                         </Button>
 
                         {/* Approve   */}
@@ -362,6 +462,127 @@ export default function StaffingRequirements() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="border-2 shadow-2xl max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit2 className="size-5 text-primary" />
+              Edit Staff Requirement
+            </DialogTitle>
+            <DialogDescription>
+              Update staff requirement for {editingReq?.roleNeeded} (ID: {editingReq?.id?.slice(0, 8)})
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Status */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Status</label>
+              <Select
+                value={editFormData.status}
+                onValueChange={(value: any) => setEditFormData({ ...editFormData, status: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="inProgress">In Progress</SelectItem>
+                  <SelectItem value="fulfilled">Fulfilled</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Role Needed */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Role Needed</label>
+              <Select
+                value={editFormData.roleNeeded}
+                onValueChange={(value) => setEditFormData({ ...editFormData, roleNeeded: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLES.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {role}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Quantity */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Quantity</label>
+              <Input
+                type="number"
+                min={1}
+                value={editFormData.quantity}
+                onChange={(e) => setEditFormData({ ...editFormData, quantity: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+
+            {/* Start Time */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Start Time</label>
+              <Input
+                type="datetime-local"
+                value={editFormData.startTime}
+                onChange={(e) => setEditFormData({ ...editFormData, startTime: e.target.value })}
+              />
+            </div>
+
+            {/* Estimated End Time */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Estimated End Time</label>
+              <Input
+                type="datetime-local"
+                value={editFormData.estimatedEndTime}
+                onChange={(e) => setEditFormData({ ...editFormData, estimatedEndTime: e.target.value })}
+              />
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Notes</label>
+              <Textarea
+                placeholder="Additional notes..."
+                value={editFormData.notes}
+                onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                rows={3}
+              />
+            </div>
+
+            {updateReq.isError && (
+              <div className="text-sm text-destructive">
+                Error: {updateReq.error?.message}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditDialogOpen(false)}
+              disabled={updateReq.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEdit}
+              disabled={updateReq.isPending}
+              className="gap-2"
+            >
+              {updateReq.isPending ? "Updating..." : "Update Requirement"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -372,54 +593,83 @@ function CreateStaffForm({
 }: {
   onSubmit: (data: any) => void;
 }) {
-  const [primaryUserId, setPrimaryUserId] = useState("");
+  const { user } = useAuth();
   const [roleNeeded, setRoleNeeded] = useState("nurse");
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [estimatedEndTime, setEstimatedEndTime] = useState("");
 
   return (
     <div className="flex flex-col gap-4 py-4">
-      <Input
-        placeholder="Primary User ID"
-        value={primaryUserId}
-        onChange={(e) => setPrimaryUserId(e.target.value)}
-      />
 
-      <Select value={roleNeeded} onValueChange={setRoleNeeded}>
-        <SelectTrigger><SelectValue /></SelectTrigger>
-        <SelectContent>
-          {ROLES.map((role) => (
-            <SelectItem key={role} value={role}>
-              {role}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Role Needed *</label>
+        <Select value={roleNeeded} onValueChange={setRoleNeeded}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {ROLES.map((role) => (
+              <SelectItem key={role} value={role}>
+                {role}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-      <Input
-        type="number"
-        min={1}
-        value={quantity}
-        onChange={(e) => setQuantity(Number(e.target.value))}
-      />
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Quantity *</label>
+        <Input
+          type="number"
+          min={1}
+          value={quantity}
+          onChange={(e) => setQuantity(Number(e.target.value))}
+        />
+      </div>
 
-      <Input
-        placeholder="Notes (optional)"
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-      />
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Start Time (Optional)</label>
+        <Input
+          type="datetime-local"
+          value={startTime}
+          onChange={(e) => setStartTime(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Estimated End Time (Optional)</label>
+        <Input
+          type="datetime-local"
+          value={estimatedEndTime}
+          onChange={(e) => setEstimatedEndTime(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Notes (Optional)</label>
+        <Textarea
+          placeholder="Additional notes..."
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={3}
+        />
+      </div>
 
       <Button
-        onClick={() =>
-          onSubmit({
-            primaryUserId,
+        onClick={() => {
+          const data: any = {
+            primaryUserId: user?.id,
             roleNeeded,
             quantity,
-            notes: notes || undefined,
-          })
-        }
+          };
+          if (notes) data.notes = notes;
+          if (startTime) data.startTime = startTime;
+          if (estimatedEndTime) data.estimatedEndTime = estimatedEndTime;
+          onSubmit(data);
+        }}
+        disabled={!user?.id}
       >
-        Create
+        Create Requirement
       </Button>
     </div>
   );

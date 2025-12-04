@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/axios";
+import { useAuth } from "@/lib/auth";
 
 import {
   Card,
@@ -34,7 +35,15 @@ import {
   RadioGroupItem,
 } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Package, Filter, Eye, CheckCircle, XCircle, Link as LinkIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Package, Filter, Eye, CheckCircle, XCircle, Link as LinkIcon, ChevronLeft, ChevronRight, Edit2 } from "lucide-react";
 
 /* ---------------- Types matching your backend ---------------- */
 type ItemRequirement = {
@@ -42,9 +51,13 @@ type ItemRequirement = {
   primaryUserId: string;
   kind: "equipment" | "blood";
   quantity: number;
-  fulfilled?: number;
-  notes?: string;
+  fulfilledCount: number;
+  startTime: string | null;
+  estimatedEndTime: string | null;
   status: "open" | "inProgress" | "fulfilled" | "cancelled";
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 const KIND_OPTIONS = ["equipment", "blood"];
@@ -62,42 +75,56 @@ export default function ItemRequirementsManagement() {
   const [page, setPage] = useState(1);
   const rowsPerPage = 10;
 
+  /* ---------------- Edit Dialog State ---------------- */
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingReq, setEditingReq] = useState<ItemRequirement | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    status: "open" as "open" | "inProgress" | "fulfilled" | "cancelled",
+    quantity: 1,
+    notes: "",
+    startTime: "",
+    estimatedEndTime: "",
+  });
+
   /* ---------------- Fetch Requirements ---------------- */
-  const reqQ = useQuery({
+  const reqQ = useQuery<ItemRequirement[]>({
     queryKey: ["item-reqs"],
-    queryFn: async (): Promise<ItemRequirement[]> => {
-      const res = await api.get("/requirements/items");
-      return res.data;
-    },
+    queryFn: () => api.get("/requirements/items"),
     staleTime: 30000,
   });
 
   /* ---------------- Create Mutation ---------------- */
-  const createReq = useMutation({
-    mutationFn: (body: {
-      primaryUserId: string;
-      kind: "equipment" | "blood";
-      quantity: number;
-      notes?: string;
-    }) => api.post("/requirements/items", body),
+  const createReq = useMutation<ItemRequirement, Error, {
+    primaryUserId: string;
+    kind: "equipment" | "blood";
+    quantity: number;
+    notes?: string | null;
+    startTime?: string | null;
+    estimatedEndTime?: string | null;
+  }>({
+    mutationFn: (body) => api.post("/requirements/items", body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["item-reqs"] }),
   });
 
   /* ---------------- Update Mutation ---------------- */
-  const updateReq = useMutation({
-    mutationFn: ({
-      id,
-      body,
-    }: {
-      id: string;
-      body: Partial<ItemRequirement>;
-    }) => api.patch(`/requirements/items/${id}`, body),
+  const updateReq = useMutation<ItemRequirement, Error, {
+    id: string;
+    body: {
+      status?: "open" | "inProgress" | "fulfilled" | "cancelled";
+      notes?: string | null;
+      quantity?: number;
+      startTime?: string | null;
+      estimatedEndTime?: string | null;
+    };
+  }>({
+    mutationFn: ({ id, body }) => api.patch(`/requirements/items/${id}`, body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["item-reqs"] }),
   });
 
   /* ---------------- Filtering Logic ---------------- */
   const filtered = useMemo(() => {
-    let data = reqQ.data ?? [];
+    const rawData = reqQ.data;
+    let data = Array.isArray(rawData) ? rawData : [];
 
     if (filterKind !== "all") data = data.filter((r) => r.kind === filterKind);
     if (filterStatus !== "all") data = data.filter((r) => r.status === filterStatus);
@@ -113,7 +140,7 @@ export default function ItemRequirementsManagement() {
   /* ---------------- Pagination ---------------- */
   const start = (page - 1) * rowsPerPage;
   const end = Math.min(start + rowsPerPage, filtered.length);
-  const rows = filtered.slice(start, end);
+  const rows = Array.isArray(filtered) ? filtered.slice(start, end) : [];
 
   function resetFilters() {
     setFilterKind("all");
@@ -121,6 +148,54 @@ export default function ItemRequirementsManagement() {
     setFilterUser("");
     setPage(1);
   }
+
+  const openEditDialog = (req: ItemRequirement) => {
+    setEditingReq(req);
+    setEditFormData({
+      status: req.status,
+      quantity: req.quantity,
+      notes: req.notes || "",
+      startTime: req.startTime ? req.startTime.split("T")[0] + "T" + req.startTime.split("T")[1].substring(0, 5) : "",
+      estimatedEndTime: req.estimatedEndTime ? req.estimatedEndTime.split("T")[0] + "T" + req.estimatedEndTime.split("T")[1].substring(0, 5) : "",
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleEdit = () => {
+    if (!editingReq) return;
+
+    const body: any = {};
+    
+    if (editFormData.status !== editingReq.status) {
+      body.status = editFormData.status;
+    }
+    if (editFormData.quantity !== editingReq.quantity) {
+      body.quantity = editFormData.quantity;
+    }
+    if (editFormData.notes !== (editingReq.notes || "")) {
+      body.notes = editFormData.notes || null;
+    }
+    if (editFormData.startTime) {
+      body.startTime = editFormData.startTime;
+    }
+    if (editFormData.estimatedEndTime) {
+      body.estimatedEndTime = editFormData.estimatedEndTime;
+    }
+
+    if (Object.keys(body).length > 0) {
+      updateReq.mutate(
+        { id: editingReq.id, body },
+        {
+          onSuccess: () => {
+            setEditDialogOpen(false);
+            setEditingReq(null);
+          },
+        }
+      );
+    } else {
+      setEditDialogOpen(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
@@ -277,7 +352,7 @@ export default function ItemRequirementsManagement() {
                         </div>
                       </TableCell>
                       <TableCell><Badge variant="outline">{r.quantity}</Badge></TableCell>
-                      <TableCell><Badge variant="outline">{r.fulfilled ?? 0}</Badge></TableCell>
+                      <TableCell><Badge variant="outline">{r.fulfilledCount}</Badge></TableCell>
                       <TableCell>
                         {r.status === "fulfilled" && <Badge variant="default">Completed</Badge>}
                         {r.status === "inProgress" && <Badge variant="secondary">In Progress</Badge>}
@@ -317,9 +392,25 @@ export default function ItemRequirementsManagement() {
                                 <Badge variant="outline">{r.quantity}</Badge>
                               </div>
                               <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                                <span className="text-sm font-medium text-muted-foreground">Fulfilled Count</span>
+                                <Badge variant="outline">{r.fulfilledCount}</Badge>
+                              </div>
+                              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                                 <span className="text-sm font-medium text-muted-foreground">Status</span>
                                 <Badge>{r.status}</Badge>
                               </div>
+                              {r.startTime && (
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                                  <span className="text-sm font-medium text-muted-foreground">Start Time</span>
+                                  <span className="text-sm">{new Date(r.startTime).toLocaleString()}</span>
+                                </div>
+                              )}
+                              {r.estimatedEndTime && (
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                                  <span className="text-sm font-medium text-muted-foreground">Estimated End</span>
+                                  <span className="text-sm">{new Date(r.estimatedEndTime).toLocaleString()}</span>
+                                </div>
+                              )}
                               <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                                 <span className="text-sm font-medium text-muted-foreground">Requested By</span>
                                 <span className="text-sm">{r.primaryUserId}</span>
@@ -338,6 +429,17 @@ export default function ItemRequirementsManagement() {
                             <LinkIcon className="size-3" />
                             Fulfillments
                           </Link>
+                        </Button>
+
+                        {/* Edit */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1"
+                          onClick={() => openEditDialog(r)}
+                        >
+                          <Edit2 className="size-3" />
+                          Edit
                         </Button>
 
                         {/* Approve */}
@@ -399,6 +501,111 @@ export default function ItemRequirementsManagement() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="border-2 shadow-2xl max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit2 className="size-5 text-primary" />
+              Edit Item Requirement
+            </DialogTitle>
+            <DialogDescription>
+              Update item requirement details for {editingReq?.kind} (ID: {editingReq?.id?.slice(0, 8)})
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Status */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-status">Status</Label>
+              <Select
+                value={editFormData.status}
+                onValueChange={(value: any) => setEditFormData({ ...editFormData, status: value })}
+              >
+                <SelectTrigger id="edit-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="inProgress">In Progress</SelectItem>
+                  <SelectItem value="fulfilled">Fulfilled</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Quantity */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-quantity">Quantity</Label>
+              <Input
+                id="edit-quantity"
+                type="number"
+                min={1}
+                value={editFormData.quantity}
+                onChange={(e) => setEditFormData({ ...editFormData, quantity: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+
+            {/* Start Time */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-startTime">Start Time</Label>
+              <Input
+                id="edit-startTime"
+                type="datetime-local"
+                value={editFormData.startTime}
+                onChange={(e) => setEditFormData({ ...editFormData, startTime: e.target.value })}
+              />
+            </div>
+
+            {/* Estimated End Time */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-estimatedEndTime">Estimated End Time</Label>
+              <Input
+                id="edit-estimatedEndTime"
+                type="datetime-local"
+                value={editFormData.estimatedEndTime}
+                onChange={(e) => setEditFormData({ ...editFormData, estimatedEndTime: e.target.value })}
+              />
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-notes">Notes</Label>
+              <Textarea
+                id="edit-notes"
+                placeholder="Additional notes..."
+                value={editFormData.notes}
+                onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                rows={3}
+              />
+            </div>
+
+            {updateReq.isError && (
+              <div className="text-sm text-destructive">
+                Error: {updateReq.error?.message}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditDialogOpen(false)}
+              disabled={updateReq.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEdit}
+              disabled={updateReq.isPending}
+              className="gap-2"
+            >
+              {updateReq.isPending ? "Updating..." : "Update Requirement"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -409,58 +616,86 @@ function CreateItemForm({
 }: {
   onSubmit: (data: any) => void;
 }) {
-  const [primaryUserId, setPrimaryUserId] = useState("");
+  const { user } = useAuth();
   const [kind, setKind] = useState<"equipment" | "blood">("equipment");
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [estimatedEndTime, setEstimatedEndTime] = useState("");
 
   return (
     <div className="flex flex-col gap-4 py-2">
-      <Input
-        placeholder="Primary User ID"
-        value={primaryUserId}
-        onChange={(e) => setPrimaryUserId(e.target.value)}
-      />
+      <div className="space-y-2">
+        <Label>Kind *</Label>
+        <RadioGroup
+          value={kind}
+          onValueChange={(v: any) => setKind(v)}
+          className="space-y-2"
+        >
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="equipment" id="kind-eq" />
+            <Label htmlFor="kind-eq">Equipment</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="blood" id="kind-blood" />
+            <Label htmlFor="kind-blood">Blood</Label>
+          </div>
+        </RadioGroup>
+      </div>
 
-      <RadioGroup
-        value={kind}
-        onValueChange={(v: any) => setKind(v)}
-        className="space-y-2"
-      >
-        <div className="flex items-center gap-2">
-          <RadioGroupItem value="equipment" id="kind-eq" />
-          <Label htmlFor="kind-eq">Equipment</Label>
-        </div>
-        <div className="flex items-center gap-2">
-          <RadioGroupItem value="blood" id="kind-blood" />
-          <Label htmlFor="kind-blood">Blood</Label>
-        </div>
-      </RadioGroup>
+      <div className="space-y-2">
+        <Label>Quantity *</Label>
+        <Input
+          type="number"
+          min={1}
+          value={quantity}
+          onChange={(e) => setQuantity(Number(e.target.value))}
+        />
+      </div>
 
-      <Input
-        type="number"
-        min={1}
-        value={quantity}
-        onChange={(e) => setQuantity(Number(e.target.value))}
-      />
+      <div className="space-y-2">
+        <Label>Start Time (Optional)</Label>
+        <Input
+          type="datetime-local"
+          value={startTime}
+          onChange={(e) => setStartTime(e.target.value)}
+        />
+      </div>
 
-      <Input
-        placeholder="Notes (optional)"
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-      />
+      <div className="space-y-2">
+        <Label>Estimated End Time (Optional)</Label>
+        <Input
+          type="datetime-local"
+          value={estimatedEndTime}
+          onChange={(e) => setEstimatedEndTime(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Notes (Optional)</Label>
+        <Textarea
+          placeholder="Additional notes..."
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={3}
+        />
+      </div>
 
       <Button
-        onClick={() =>
-          onSubmit({
-            primaryUserId,
+        onClick={() => {
+          const data: any = {
+            primaryUserId: user?.id,
             kind,
             quantity,
-            notes: notes || undefined,
-          })
-        }
+          };
+          if (notes) data.notes = notes;
+          if (startTime) data.startTime = startTime;
+          if (estimatedEndTime) data.estimatedEndTime = estimatedEndTime;
+          onSubmit(data);
+        }}
+        disabled={!user?.id}
       >
-        Create
+        Create Requirement
       </Button>
     </div>
   );

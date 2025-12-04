@@ -631,7 +631,7 @@ function EditAppointmentDialog({ appointment }: { appointment: Appointment }) {
           <div className="space-y-2">
             <Label className="font-semibold">Issues / Health Concerns</Label>
             <Textarea
-              className="border-2 min-h-[80px]"
+              className="border-2 min-h-20"
               value={issuesText}
               onChange={(e) => setIssuesText(e.target.value)}
               placeholder="Health concerns or issues"
@@ -715,7 +715,7 @@ function DeleteAppointmentDialog({ appointment }: { appointment: Appointment }) 
           <div className="space-y-2">
             <Label className="font-semibold">Cancellation Reason (Optional)</Label>
             <Textarea
-              className="border-2 min-h-[80px]"
+              className="border-2 min-h-20"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Enter reason for cancellation..."
