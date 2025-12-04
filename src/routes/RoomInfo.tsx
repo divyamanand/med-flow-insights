@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/axios";
 
 import {
@@ -19,73 +19,61 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from "@/components/ui/table";
-import { Spinner } from "@/components/ui/spinner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Spinner } from "@/components/ui/spinner";
 import { Label } from "@/components/ui/label";
-import { DoorClosed, Users, Edit2, Activity, History, ChevronLeft } from "lucide-react";
+import { DoorClosed, Users, Edit2, Activity, History, ChevronLeft, Wrench } from "lucide-react";
+
+type Room = {
+  id: string;
+  name: string;
+  type: "consultation" | "operation" | "ward" | "icu" | "emergency";
+  floor: number;
+  capacity: number;
+  status: "available" | "occupied" | "maintenance" | "reserved";
+  equipment: string[];
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 export default function RoomDetails() {
   const { id = "" } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   /* --------------------- Load Room --------------------- */
-  const roomQ = useQuery({
+  const roomQ = useQuery<Room>({
     queryKey: ["room", id],
-    queryFn: async () => {
-      const response: any = await api.get(`/rooms/${id}`);
-      return response.data;
-    },
+    queryFn: () => api.get(`/rooms/${id}`),
     enabled: !!id,
   });
 
   /* ------------------ Local state for status update ------------------ */
-  const [status, setStatus] = useState<string>("available");
+  const [status, setStatus] = useState<string>(roomQ.data?.status || "available");
 
-  /* ------------------ Mock Fulfillment History ------------------ */
-  const history = [
-    {
-      date: "2024-10-26",
-      slot: "10:00 - 10:30",
-      patient: "John Doe",
-      doctor: "Dr. Smith",
-      status: "Completed",
+  // Update local status when room data changes
+  useEffect(() => {
+    if (roomQ.data?.status) {
+      setStatus(roomQ.data.status);
+    }
+  }, [roomQ.data?.status]);
+
+  /* ------------------ Update Status Mutation ------------------ */
+  const updateStatusMutation = useMutation({
+    mutationFn: (newStatus: string) => 
+      api.put(`/rooms/${id}`, { status: newStatus }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["room", id] });
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
     },
-    {
-      date: "2024-10-26",
-      slot: "10:30 - 11:00",
-      patient: "John Doe",
-      doctor: "Dr. Smith",
-      status: "Completed",
-    },
-    {
-      date: "2024-10-26",
-      slot: "11:00 - 11:30",
-      patient: "Jane Lee",
-      doctor: "Dr. Jones",
-      status: "Occupied",
-    },
-    {
-      date: "2024-10-26",
-      slot: "11:30 - 12:00",
-      patient: "David Chen",
-      doctor: "Dr. Jones",
-      status: "Reserved",
-    },
-    {
-      date: "2024-10-26",
-      slot: "12:00 - 12:30",
-      patient: "Maria Rodriguez",
-      doctor: "Dr. Jmith",
-      status: "Reserved",
-    },
-    {
-      date: "2024-10-26",
-      slot: "13:00 - 13:30",
-      patient: "Ahmed Khan",
-      doctor: "Dr. Smith",
-      status: "Available",
-    },
-  ];
+  });
+
+  const handleUpdateStatus = () => {
+    if (status !== roomQ.data?.status) {
+      updateStatusMutation.mutate(status);
+    }
+  };
 
   if (roomQ.isLoading)
     return <div className="flex items-center justify-center p-10"><Spinner className="size-6" /></div>;
@@ -93,7 +81,9 @@ export default function RoomDetails() {
   if (roomQ.error)
     return <div className="text-destructive p-6">{(roomQ.error as Error).message}</div>;
 
-  const room = roomQ.data as any;
+  const room = roomQ.data;
+
+  if (!room) return null;
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8 animate-slide-in-bottom">
@@ -107,11 +97,9 @@ export default function RoomDetails() {
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight gradient-text">
             {room.name}
           </h1>
-          <Button variant="outline" asChild className="gap-2">
-            <a href="/rooms">
-              <ChevronLeft className="size-4" />
-              Back to Rooms
-            </a>
+          <Button variant="outline" className="gap-2" onClick={() => navigate("/rooms")}>
+            <ChevronLeft className="size-4" />
+            Back to Rooms
           </Button>
         </div>
       </div>
@@ -142,17 +130,53 @@ export default function RoomDetails() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Floor</p>
+                <span className="font-semibold">Floor {room.floor}</span>
+              </div>
+              <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Capacity</p>
                 <div className="flex items-center gap-2">
                   <Users className="size-4 text-muted-foreground" />
                   <span className="font-semibold">{room.capacity}</span>
                 </div>
               </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Current Status</p>
-                <Badge className="capitalize">{room.status}</Badge>
-              </div>
             </div>
+
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-muted-foreground">Current Status</p>
+              <Badge 
+                variant={
+                  room.status === "available" ? "default" : 
+                  room.status === "occupied" ? "destructive" : 
+                  room.status === "reserved" ? "outline" : 
+                  "secondary"
+                } 
+                className="capitalize"
+              >
+                {room.status}
+              </Badge>
+            </div>
+
+            {room.equipment && room.equipment.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Equipment</p>
+                <div className="flex flex-wrap gap-2">
+                  {room.equipment.map((item) => (
+                    <Badge key={item} variant="secondary" className="gap-1">
+                      <Wrench className="size-3" />
+                      {item}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {room.notes && (
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Notes</p>
+                <p className="text-sm">{room.notes}</p>
+              </div>
+            )}
 
             <Dialog>
               <DialogTrigger asChild>
@@ -165,12 +189,12 @@ export default function RoomDetails() {
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Edit2 className="size-5 text-primary" />
-                    Edit Room (Demo)
+                    Edit Room
                   </DialogTitle>
                 </DialogHeader>
-                <p className="text-sm text-muted-foreground">Form goes here...</p>
+                <p className="text-sm text-muted-foreground">Navigate back to the Rooms page to edit room details.</p>
                 <DialogFooter>
-                  <Button>Save (Demo)</Button>
+                  <Button onClick={() => navigate("/rooms")}>Go to Rooms</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -187,7 +211,7 @@ export default function RoomDetails() {
               Change Room Status
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <RadioGroup value={status} onValueChange={setStatus} className="space-y-3">
 
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
@@ -212,70 +236,59 @@ export default function RoomDetails() {
 
             </RadioGroup>
 
-            <Button className="mt-4 w-full gap-2">
-              <Edit2 className="size-4" />
-              Update Status (Demo)
+            {updateStatusMutation.isError && (
+              <div className="text-sm text-destructive">
+                Error: {updateStatusMutation.error?.message}
+              </div>
+            )}
+
+            <Button 
+              className="w-full gap-2"
+              onClick={handleUpdateStatus}
+              disabled={status === room.status || updateStatusMutation.isPending}
+            >
+              {updateStatusMutation.isPending ? (
+                <>
+                  <Spinner className="size-4" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Edit2 className="size-4" />
+                  Update Status
+                </>
+              )}
             </Button>
           </CardContent>
         </Card>
 
       </div>
 
-      {/* ROOM HISTORY */}
+      {/* ROOM METADATA */}
       <Card className="border-2 shadow-lg glass-effect">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <div className="p-2 bg-success/10 rounded-lg">
-              <History className="size-5 text-success" />
+            <div className="p-2 bg-accent/10 rounded-lg">
+              <History className="size-5 text-accent" />
             </div>
-            Room Fulfillment History
+            Room Metadata
           </CardTitle>
         </CardHeader>
         <CardContent>
-
-          <div className="overflow-auto max-h-[400px]">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-muted/50">
-                  <TableHead className="font-semibold">Date</TableHead>
-                  <TableHead className="font-semibold">Time Slot</TableHead>
-                  <TableHead className="font-semibold">Patient Name</TableHead>
-                  <TableHead className="font-semibold">Doctor/Staff</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-
-              <TableBody>
-                {history.map((h, i) => (
-                  <TableRow key={i} className="hover:bg-muted/50 transition-colors border-muted/30">
-                    <TableCell className="text-sm text-muted-foreground">{h.date}</TableCell>
-                    <TableCell className="font-medium">{h.slot}</TableCell>
-                    <TableCell className="font-medium">{h.patient}</TableCell>
-                    <TableCell className="text-sm">{h.doctor}</TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={
-                          h.status === "Completed" ? "default" : 
-                          h.status === "Occupied" ? "secondary" : 
-                          h.status === "Reserved" ? "outline" : 
-                          "secondary"
-                        }
-                        className="capitalize"
-                      >
-                        {h.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-
-            </Table>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-muted-foreground">Created At</p>
+              <p className="font-medium">
+                {new Date(room.createdAt).toLocaleString()}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
+              <p className="font-medium">
+                {new Date(room.updatedAt).toLocaleString()}
+              </p>
+            </div>
           </div>
-
-          <p className="text-right text-sm text-muted-foreground mt-3">
-            Showing {history.length} results
-          </p>
-
         </CardContent>
       </Card>
     </div>
