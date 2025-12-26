@@ -32,11 +32,17 @@ import FulfillmentsPage from './routes/Fulfillments'
 import FulfillmentsItemsPage from './routes/FulfillmentsItems'
 import FulfillmentsStaffPage from './routes/FulfillmentsStaff'
 import FulfillmentsRoomsPage from './routes/FulfillmentsRooms'
+import { useAuth } from '@/lib/auth'
 
 function App() {
+  const { user } = useAuth()
+
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route
+        path="/login"
+        element={user ? <Navigate to="/" replace /> : <Login />}
+      />
       <Route path="/" element={<HomeLanding />} />
       <Route path="/" element={<AppLayout />}>
         <Route path="about" element={<About />} />

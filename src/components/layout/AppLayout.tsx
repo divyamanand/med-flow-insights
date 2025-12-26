@@ -1,4 +1,4 @@
-import { NavLink, Outlet, Link, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { Fragment, useState } from 'react'
 import {
   SidebarProvider,
@@ -53,6 +53,7 @@ import { cn } from '@/lib/utils'
 
 export default function AppLayout() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { user, clearSession } = useAuth()
   const [isDark, setIsDark] = useState(false)
   
@@ -62,6 +63,7 @@ export default function AppLayout() {
     },
     onSettled: () => {
       clearSession()
+      navigate("/")
     },
   })
 

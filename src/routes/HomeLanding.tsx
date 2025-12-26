@@ -20,6 +20,7 @@ import {
   Clock,
   Building,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 
 type FeatureCardProps = {
   Icon: React.ComponentType<{ className?: string }>;
@@ -63,6 +64,8 @@ const StatCard: React.FC<StatCardProps> = ({ number, label, Icon }) => {
 };
 
 export default function HomeLanding() {
+  const { user } = useAuth();
+  const isLoggedIn = Boolean(user);
   const features = [
     {
       Icon: UserPlus,
@@ -142,16 +145,33 @@ export default function HomeLanding() {
             <a href="#features" className="hover:text-primary transition-colors">Features</a>
             <a href="#benefits" className="hover:text-primary transition-colors">Benefits</a>
             <a href="#stats" className="hover:text-primary transition-colors">Stats</a>
-            <Link to="/login">
-              <Button variant="outline" className="hover:bg-primary hover:text-primary-foreground transition-all">
-                Sign In
-              </Button>
-            </Link>
-            <Link to="/login">
-              <Button className="bg-linear-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg">
-                Get Started
-              </Button>
-            </Link>
+            {isLoggedIn ? (
+              <>
+                <Link to="/dashboard">
+                  <Button variant="outline" className="hover:bg-primary hover:text-primary-foreground transition-all">
+                    Dashboard
+                  </Button>
+                </Link>
+                <Link to="/dashboard">
+                  <Button className="bg-linear-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg">
+                    Go to Dashboard
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="outline" className="hover:bg-primary hover:text-primary-foreground transition-all">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/login">
+                  <Button className="bg-linear-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>
@@ -177,12 +197,21 @@ export default function HomeLanding() {
               </p>
 
               <div className="flex flex-wrap gap-4 pt-4">
-                <Link to="/login">
-                  <Button size="lg" className="bg-linear-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-xl text-lg px-8 py-6 group">
-                    Get Started Free
-                    <ArrowRight className="ml-2 size-5 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </Link>
+                {isLoggedIn ? (
+                  <Link to="/dashboard">
+                    <Button size="lg" className="bg-linear-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-xl text-lg px-8 py-6 group">
+                      Go to Dashboard
+                      <ArrowRight className="ml-2 size-5 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link to="/login">
+                    <Button size="lg" className="bg-linear-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-xl text-lg px-8 py-6 group">
+                      Get Started Free
+                      <ArrowRight className="ml-2 size-5 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </Link>
+                )}
                 <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-2 hover:border-primary hover:bg-primary/5">
                   Watch Demo
                 </Button>
@@ -338,11 +367,19 @@ export default function HomeLanding() {
             </p>
 
             <div className="flex flex-wrap gap-4 pt-4">
-              <Link to="/login">
-                <Button size="lg" className="bg-linear-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg">
-                  Start Free Trial
-                </Button>
-              </Link>
+              {isLoggedIn ? (
+                <Link to="/dashboard">
+                  <Button size="lg" className="bg-linear-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg">
+                    Go to Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/login">
+                  <Button size="lg" className="bg-linear-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg">
+                    Start Free Trial
+                  </Button>
+                </Link>
+              )}
               <Button size="lg" variant="outline" className="border-2">
                 Schedule a Demo
               </Button>
@@ -362,11 +399,19 @@ export default function HomeLanding() {
               Join thousands of healthcare professionals who trust MedFlow Insights to streamline their operations and improve patient outcomes.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link to="/login">
-                <Button size="lg" className="bg-linear-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-xl text-lg px-10 py-7">
-                  Get Started Free
-                </Button>
-              </Link>
+              {isLoggedIn ? (
+                <Link to="/dashboard">
+                  <Button size="lg" className="bg-linear-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-xl text-lg px-10 py-7">
+                    Go to Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/login">
+                  <Button size="lg" className="bg-linear-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-xl text-lg px-10 py-7">
+                    Get Started Free
+                  </Button>
+                </Link>
+              )}
               <Button size="lg" variant="outline" className="text-lg px-10 py-7 border-2">
                 Contact Sales
               </Button>
@@ -400,7 +445,13 @@ export default function HomeLanding() {
                 <li><a href="#features" className="hover:text-primary transition-colors">Features</a></li>
                 <li><a href="#benefits" className="hover:text-primary transition-colors">Benefits</a></li>
                 <li><a href="#stats" className="hover:text-primary transition-colors">Statistics</a></li>
-                <li><Link to="/login" className="hover:text-primary transition-colors">Pricing</Link></li>
+                <li>
+                  {isLoggedIn ? (
+                    <Link to="/dashboard" className="hover:text-primary transition-colors">Dashboard</Link>
+                  ) : (
+                    <Link to="/login" className="hover:text-primary transition-colors">Pricing</Link>
+                  )}
+                </li>
               </ul>
             </div>
 

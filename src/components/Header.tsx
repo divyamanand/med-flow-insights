@@ -16,7 +16,7 @@ export default function Header() {
     },
     onSettled: () => {
       clearSession()
-      navigate('/login')
+      navigate('/')
     },
   })
 
